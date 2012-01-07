@@ -26,10 +26,7 @@
 #include <string.h>
 #include <ctype.h> // toupper() and tolower()
 
-#include <zlib.h>
-
 #include "string_buffer.h"
-
 
 STRING_BUFFER* string_buff_init(const t_buf_pos size)
 {
@@ -125,7 +122,7 @@ STRING_BUFFER* string_buff_copy(STRING_BUFFER* sbuf)
 
 void string_buff_add(STRING_BUFFER* sbuf, const char* txt)
 {
-  int str_len = strlen(txt);
+  size_t str_len = strlen(txt);
   string_buff_addn(sbuf, txt, str_len);
 }
 
@@ -229,31 +226,31 @@ t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
 }
 
 // returns number of characters read
-// or -1 if EOF
+// or 0 if EOF
 t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
 {
   t_buf_pos init_str_len = sbuf->len;
 
   // Enlarge *str allocated mem if needed
   // Need AT LEAST 2 free spaces - one for a character and one for \0
-  if(sbuf->len+2 >= sbuf->size) {
+  if(sbuf->len+2 >= sbuf->size)
+  {
     // Double buffer size
     string_buff_grow(sbuf, 2*sbuf->size);
   }
 
   // max characters to read = sbuf.size - sbuf.len
-  char* read;
-  while((read = gzgets(gz_file,
-                       (char*)(sbuf->buff + sbuf->len),
-                       sbuf->size - sbuf->len)) != NULL)
+  while(gzgets(gz_file,
+               (char*)(sbuf->buff + sbuf->len),
+               sbuf->size - sbuf->len) != Z_NULL)
   {
     // Check if we hit the end of the line
-    t_buf_pos read_length = strlen(sbuf->buff + sbuf->len);
-    char* last_char = (char*)(sbuf->buff + sbuf->len + read_length - 1);
-    
+    t_buf_pos num_of_chars_read = (t_buf_pos)strlen(sbuf->buff + sbuf->len);
+    char* last_char = (char*)(sbuf->buff + sbuf->len + num_of_chars_read - 1);
+
     // Get the new length of the string buffer
     // count should include the return chars
-    sbuf->len += read_length;
+    sbuf->len += num_of_chars_read;
     
     if(*last_char == '\n')
     {
@@ -265,9 +262,9 @@ t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
     string_buff_grow(sbuf, 2*sbuf->size);
   }
 
-  int bases_read = sbuf->len - init_str_len;
+  t_buf_pos total_chars_read = sbuf->len - init_str_len;
 
-  return (bases_read > 0 ? sbuf->len - init_str_len : -1);
+  return total_chars_read;
 }
 
 /**************************/
@@ -275,8 +272,8 @@ t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
 /**************************/
 long split_str(const char* split, const char* txt, char*** result)
 {
-  long split_len = strlen(split);
-  long txt_len = strlen(txt);
+  size_t split_len = strlen(split);
+  size_t txt_len = strlen(txt);
 
   // result is temporarily held here
   char** arr;
@@ -293,7 +290,8 @@ long split_str(const char* split, const char* txt, char*** result)
     {
       arr = (char**) malloc(txt_len * sizeof(char*));
     
-      int i;
+      t_buf_pos i;
+
       for(i = 0; i < txt_len; i++)
       {
         arr[i] = (char*) malloc(2 * sizeof(char));

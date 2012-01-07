@@ -21,12 +21,11 @@
 #ifndef STRING_BUFFER_FILE_SEEN
 #define STRING_BUFFER_FILE_SEEN
 
-#define t_buf_pos unsigned long
+typedef unsigned long t_buf_pos;
 
-// needed for FILE*
-//#include <stdio.h>
-// needed for gzFile
-#include <zlib.h>
+//#include <stdio.h> // needed for FILE*
+
+#include <zlib.h> // needed for gzFile
 
 typedef struct STRING_BUFFER STRING_BUFFER;
 
