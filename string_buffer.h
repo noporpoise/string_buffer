@@ -46,7 +46,7 @@ STRING_BUFFER* string_buff_init(const t_buf_pos size);
 STRING_BUFFER* string_buff_create(const char* str);
 void string_buff_reset(STRING_BUFFER* sbuf);
 void string_buff_free(STRING_BUFFER* sbuf);
-void string_buff_grow(STRING_BUFFER *sbuf, const t_buf_pos new_size);
+void string_buff_grow(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 STRING_BUFFER* string_buff_copy(STRING_BUFFER* sbuf);
 

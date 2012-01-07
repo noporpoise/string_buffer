@@ -82,12 +82,27 @@ void string_buff_free(STRING_BUFFER* sbuf)
   free(sbuf);
 }
 
-void string_buff_grow(STRING_BUFFER *sbuf, const t_buf_pos new_size)
+char string_buff_resize(STRING_BUFFER *sbuf, const t_buf_pos new_len)
 {
-  sbuf->size = new_size;
+  sbuf->size = new_len;
   char *new_buff = realloc(sbuf->buff, sbuf->size);
   
   if(new_buff == NULL)
+  {
+    return 0;
+  }
+  else
+  {
+    sbuf->buff = new_buff;
+    // Add null byte incase buffer was shrunk
+    sbuf->buff[sbuf->len] = '\0';
+    return 1;
+  }
+}
+
+void string_buff_resize_vital(STRING_BUFFER *sbuf, const t_buf_pos new_len)
+{
+  if(!string_buff_resize(sbuf, new_len))
   {
     fprintf(stderr, "Error: STRING_BUFFER couldn't be given more memory.  "
                     "Requested %lui bytes.  STRING_BUFFER begins '%s...'",
@@ -95,10 +110,7 @@ void string_buff_grow(STRING_BUFFER *sbuf, const t_buf_pos new_size)
     
     free(sbuf->buff);
     
-    exit(-1);
-  }
-  else {
-    sbuf->buff = new_buff;
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -108,7 +120,7 @@ void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len)
   sbuf->buff[new_len] = '\0';
 }
 
-STRING_BUFFER* string_buff_copy(STRING_BUFFER* sbuf)
+STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf)
 {
   // One byte for the string end / null char \0
   STRING_BUFFER* sbuf_cpy = string_buff_init(sbuf->len+1);
@@ -137,7 +149,7 @@ void string_buff_addn(STRING_BUFFER* sbuf, const char* txt, const t_buf_pos len)
   // plus 1 for '\0'
   if(sbuf->len + len + 1 > sbuf->size)
   {
-    string_buff_grow(sbuf, sbuf->len + len + 1);
+    string_buff_resize_vital(sbuf, sbuf->len + len + 1);
   }
 
   strncpy(sbuf->buff+sbuf->len, txt, len);
@@ -151,7 +163,7 @@ void string_buff_add_char(STRING_BUFFER* sbuf, const char c)
   // plus 1 for '\0'
   if(sbuf->len + 1 + 1 > sbuf->size)
   {
-    string_buff_grow(sbuf, sbuf->len + 1 + 1);
+    string_buff_resize_vital(sbuf, sbuf->len + 1 + 1);
   }
 
   sbuf->buff[(sbuf->len)++] = c;
@@ -242,7 +254,7 @@ t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
   if(sbuf->len+2 >= sbuf->size)
   {
     // Double buffer size
-    string_buff_grow(sbuf, 2*sbuf->size);
+    string_buff_resize_vital(sbuf, 2*sbuf->size);
   }
 
   // max characters to read = sbuf.size - sbuf.len
@@ -265,7 +277,7 @@ t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
     }
 
     // Double buffer size
-    string_buff_grow(sbuf, 2*sbuf->size);
+    string_buff_resize_vital(sbuf, 2*sbuf->size);
   }
 
   t_buf_pos total_chars_read = sbuf->len - init_str_len;

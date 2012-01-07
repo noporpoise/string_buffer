@@ -12,6 +12,41 @@ To build the test code:
 
 $ make
 
+== Functions ==
+
+// Creation, reset, free and memory expansion
+STRING_BUFFER* string_buff_init(const t_buf_pos size);
+STRING_BUFFER* string_buff_create(const char* str);
+
+void string_buff_reset(STRING_BUFFER* sbuf);
+void string_buff_free(STRING_BUFFER* sbuf);
+
+// grow reallocs memory return 1 on success, 0 on failure (not enough memory)
+char string_buff_resize(STRING_BUFFER *sbuf, const t_buf_pos new_len);
+// same as above, but exits with error message on failure (i.e. not enough memory)
+void string_buff_resize_vital(STRING_BUFFER *sbuf, const t_buf_pos new_len);
+
+// Shorten a string by inserting a null character (aka end of string, '\0')
+void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
+
+STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf);
+
+// Useful String functions
+void string_buff_add(STRING_BUFFER* sbuf, const char* txt);
+void string_buff_addn(STRING_BUFFER* sbuf, const char* txt, const t_buf_pos len);
+void string_buff_add_char(STRING_BUFFER* sbuf, const char txt);
+void string_buff_chomp(STRING_BUFFER *sbuf);
+char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start, const t_buf_pos len);
+void string_buff_to_uppercase(STRING_BUFFER *sbuf);
+void string_buff_to_lowercase(STRING_BUFFER *sbuf);
+
+// Reading a file
+t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, gzFile *gz_file);
+t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file);
+
+// Other String functions
+long split_str(const char* split, const char* txt, char*** result);
+
 == License ==
 
  Copyright (c) 2011, Isaac Turner
@@ -32,3 +67,10 @@ $ make
  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+== Development ==
+
+Short term goals:
+STRING_BUFFER* string_buff_copy(STRING_BUFFER* dest, const t_buf_pos pos,
+                                STRING_BUFFER* src, const t_buf_pos pos,
+                                const t_buf_pos len);
