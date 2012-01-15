@@ -65,7 +65,7 @@ void string_buff_ensure_capacity(STRING_BUFFER *sbuf, const t_buf_pos len);
 // reallocs to exact memory specified - return 1 on success 0 on failure
 char string_buff_resize(STRING_BUFFER *sbuf, const t_buf_pos new_size);
 
-// convenience function: prints error and exits with EXIT_FAILURE if resize fails
+// convenience function: prints error and exits with EXIT_FAILURE if it fails
 void string_buff_resize_vital(STRING_BUFFER *sbuf, const t_buf_pos new_size);
 
 // Shorten string without reallocating memory
@@ -75,10 +75,12 @@ void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 // Useful String functions
 
 void string_buff_append_str(STRING_BUFFER* sbuf, const char* txt);
-void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt, const t_buf_pos len);
+void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt,
+                             const t_buf_pos len);
 void string_buff_append_char(STRING_BUFFER* sbuf, const char txt);
 void string_buff_chomp(STRING_BUFFER *sbuf);
-char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start, const t_buf_pos len);
+char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start,
+                         const t_buf_pos len);
 void string_buff_to_uppercase(STRING_BUFFER *sbuf);
 void string_buff_to_lowercase(STRING_BUFFER *sbuf);
 
