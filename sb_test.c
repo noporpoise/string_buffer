@@ -57,8 +57,8 @@ void _test_add_char()
 {
   STRING_BUFFER* sbuf = string_buff_init(100);
   
-  string_buff_add_char(sbuf, 'a');
-  string_buff_add_char(sbuf, 'b');
+  string_buff_append_char(sbuf, 'a');
+  string_buff_append_char(sbuf, 'b');
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 }
 

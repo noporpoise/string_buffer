@@ -71,9 +71,6 @@ long split_str(const char* split, const char* txt, char*** result);
 == Development ==
 
 Short term goals:
-STRING_BUFFER* string_buff_copy(STRING_BUFFER* dest, const t_buf_pos pos,
-                                STRING_BUFFER* src, const t_buf_pos pos,
-                                const t_buf_pos len);
-
-t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *gz_file);
-t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *gz_file);
+- FILE versions of gzFile functions?
+t_buf_pos string_buff_reset_readline_plain(STRING_BUFFER *sbuf, FILE *gz_file);
+t_buf_pos string_buff_readline_plain(STRING_BUFFER *sbuf, FILE *gz_file);

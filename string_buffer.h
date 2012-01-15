@@ -46,18 +46,45 @@ STRING_BUFFER* string_buff_init(const t_buf_pos size);
 STRING_BUFFER* string_buff_create(const char* str);
 void string_buff_reset(STRING_BUFFER* sbuf);
 void string_buff_free(STRING_BUFFER* sbuf);
-void string_buff_grow(STRING_BUFFER *sbuf, const t_buf_pos new_len);
-void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
-STRING_BUFFER* string_buff_copy(STRING_BUFFER* sbuf);
+STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf);
 
+// Get size
+inline t_buf_pos string_buff_strlen(STRING_BUFFER* sbuf);
+inline t_buf_pos string_buff_size(STRING_BUFFER* sbuf);
+
+// get/set chars
+inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index);
+inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index, const char c);
+
+//
+// Resizing
+
+// Ensure capacity for len characters plus '\0' character - exits on FAILURE
+void string_buff_ensure_capacity(STRING_BUFFER *sbuf, const t_buf_pos len);
+
+// reallocs to exact memory specified - return 1 on success 0 on failure
+char string_buff_resize(STRING_BUFFER *sbuf, const t_buf_pos new_size);
+
+// convenience function: prints error and exits with EXIT_FAILURE if resize fails
+void string_buff_resize_vital(STRING_BUFFER *sbuf, const t_buf_pos new_size);
+
+// Shorten string without reallocating memory
+void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
+
+//
 // Useful String functions
-void string_buff_add(STRING_BUFFER* sbuf, const char* txt);
-void string_buff_addn(STRING_BUFFER* sbuf, const char* txt, const t_buf_pos len);
-void string_buff_add_char(STRING_BUFFER* sbuf, const char txt);
+
+void string_buff_append_str(STRING_BUFFER* sbuf, const char* txt);
+void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt, const t_buf_pos len);
+void string_buff_append_char(STRING_BUFFER* sbuf, const char txt);
 void string_buff_chomp(STRING_BUFFER *sbuf);
 char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start, const t_buf_pos len);
 void string_buff_to_uppercase(STRING_BUFFER *sbuf);
 void string_buff_to_lowercase(STRING_BUFFER *sbuf);
+
+void string_buff_copy(STRING_BUFFER* dest, const t_buf_pos dest_pos,
+                      STRING_BUFFER* src, const t_buf_pos src_pos,
+                      const t_buf_pos len);
 
 // Reading a file
 t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, gzFile *gz_file);
