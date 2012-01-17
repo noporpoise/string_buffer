@@ -389,12 +389,19 @@ void _string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
     num_chars = vsprintf(sbuf->buff, fmt, argptr);
   }
 
+  va_end(argptr);
+
   if(num_chars < 0)
   {
     fprintf(stderr, "Warning: string_buff_sprintf something went wrong..\n");
+    sbuf->buff[sbuf->len] = '\0';
+  }
+  else
+  {
+    sbuf->len = pos + num_chars;
   }
 
-  va_end(argptr);
+  // Don't need to NUL terminate, vsprintf/vnsprintf does that for us
 }
 
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...)
