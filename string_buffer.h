@@ -38,7 +38,7 @@ typedef struct STRING_BUFFER STRING_BUFFER;
 struct STRING_BUFFER {
   char *buff;
   t_buf_pos len; // length of the string
-  t_buf_pos size; // buffer size
+  t_buf_pos size; // buffer size - includes '\0' (size >= len+1)
 };
 
 // Creation, reset, free and memory expansion
@@ -51,10 +51,6 @@ STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf);
 // Get size
 inline t_buf_pos string_buff_strlen(STRING_BUFFER* sbuf);
 inline t_buf_pos string_buff_size(STRING_BUFFER* sbuf);
-
-// get/set chars
-inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index);
-inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index, const char c);
 
 //
 // Resizing
@@ -74,6 +70,11 @@ void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 //
 // Useful String functions
 
+// get/set chars
+inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index);
+inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index,
+                                 const char c);
+
 void string_buff_append_str(STRING_BUFFER* sbuf, const char* txt);
 void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt,
                              const t_buf_pos len);
@@ -88,9 +89,18 @@ void string_buff_copy(STRING_BUFFER* dest, const t_buf_pos dest_pos,
                       STRING_BUFFER* src, const t_buf_pos src_pos,
                       const t_buf_pos len);
 
-// Reading a file
-t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, gzFile *gz_file);
-t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file);
+// sprintf to a STRING_BUFFER
+void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...);
+void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                            const char* fmt, ...);
+
+// Reading a FILE
+t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file);
+t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *gz_file);
+
+// Reading a gzFile
+t_buf_pos string_buff_reset_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
+t_buf_pos string_buff_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
 
 // Other String functions
 long split_str(const char* split, const char* txt, char*** result);

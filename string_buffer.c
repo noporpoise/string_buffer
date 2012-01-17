@@ -29,6 +29,7 @@
 #define MIN_SIZE 10
 
 #include <stdio.h>
+#include <stdarg.h> // required for va_list
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h> // toupper() and tolower()
@@ -113,7 +114,8 @@ inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index)
   return sbuf->buff[index];
 }
 
-inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index, const char c)
+inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index,
+                                 const char c)
 {
   sbuf->buff[index] = c;
 }
@@ -203,7 +205,7 @@ void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt,
 
 void string_buff_append_char(STRING_BUFFER* sbuf, const char c)
 {
-  // plus 1 for '\0'
+  // Adding one character
   string_buff_ensure_capacity(sbuf, sbuf->len + 1);
 
   sbuf->buff[(sbuf->len)++] = c;
@@ -291,17 +293,7 @@ void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
 /* File handling */
 /*****************/
 
-// returns number of characters read
-// or -1 if EOF
-t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
-{
-  string_buff_reset(sbuf);
-  return string_buff_readline(sbuf, gz_file);
-}
-
-// returns number of characters read
-// or 0 if EOF
-t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
+t_buf_pos _string_buff_readline(STRING_BUFFER *sbuf, FILE *file, gzFile *gz_file)
 {
   t_buf_pos init_str_len = sbuf->len;
 
@@ -310,9 +302,10 @@ t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
   string_buff_ensure_capacity(sbuf, sbuf->len+1);
 
   // max characters to read = sbuf.size - sbuf.len
-  while(gzgets(gz_file,
-               (char*)(sbuf->buff + sbuf->len),
-               sbuf->size - sbuf->len) != Z_NULL)
+  while((gz_file != NULL && gzgets(gz_file, (char*)(sbuf->buff + sbuf->len),
+                                   sbuf->size - sbuf->len) != Z_NULL) ||
+        (file != NULL && fgets((char*)(sbuf->buff + sbuf->len),
+                               sbuf->size - sbuf->len, file) != NULL))
   {
     // Check if we hit the end of the line
     t_buf_pos num_of_chars_read = (t_buf_pos)strlen(sbuf->buff + sbuf->len);
@@ -339,6 +332,87 @@ t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, gzFile *gz_file)
   return total_chars_read;
 }
 
+
+// read FILE
+// returns number of characters read
+// or 0 if EOF
+t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file)
+{
+  string_buff_reset(sbuf);
+  return string_buff_readline(sbuf, file);
+}
+
+// read FILE
+// returns number of characters read
+// or 0 if EOF
+t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *file)
+{
+  return _string_buff_readline(sbuf, file, NULL);
+}
+
+
+// read gzFile
+// returns number of characters read
+// or 0 if EOF
+t_buf_pos string_buff_reset_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
+{
+  string_buff_reset(sbuf);
+  return string_buff_zreadline(sbuf, gz_file);
+}
+
+// read gzFile
+// returns number of characters read
+// or 0 if EOF
+t_buf_pos string_buff_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
+{
+  return _string_buff_readline(sbuf, NULL, gz_file);
+}
+
+
+
+void _string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                             const char* fmt, ...)
+{
+  size_t buf_len = (size_t)(sbuf->size - pos);
+
+  va_list argptr;
+  va_start(argptr, fmt);
+  
+  int num_chars = vsnprintf(sbuf->buff+pos, buf_len, fmt, argptr);
+
+  // num_chars < 0 => failure
+  // num_chars is the number of chars that would be written (not including '\0')
+  if(num_chars >= buf_len)
+  {
+    string_buff_ensure_capacity(sbuf, pos+num_chars);
+    // Don't need to use vsnprintf now
+    num_chars = vsprintf(sbuf->buff, fmt, argptr);
+  }
+
+  if(num_chars < 0)
+  {
+    fprintf(stderr, "Warning: string_buff_sprintf something went wrong..\n");
+  }
+
+  va_end(argptr);
+}
+
+void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...)
+{
+  va_list argptr;
+  va_start(argptr, fmt);
+  _string_buff_sprintf_at(sbuf, 0, fmt, argptr);
+  va_end(argptr);
+}
+
+void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                            const char* fmt, ...)
+{
+  va_list argptr;
+  va_start(argptr, fmt);
+  _string_buff_sprintf_at(sbuf, pos, fmt, argptr);
+  va_end(argptr);
+}
 
 /**************************/
 /* Other String Functions */
