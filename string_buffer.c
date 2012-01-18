@@ -36,6 +36,10 @@
 
 #include "string_buffer.h"
 
+/******************************/
+/*  Constructors/Destructors  */
+/******************************/
+
 STRING_BUFFER* string_buff_init(const t_buf_pos size)
 {
   t_buf_pos new_size = size < MIN_SIZE ? MIN_SIZE : size;
@@ -99,15 +103,19 @@ STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf)
   return sbuf_cpy;
 }
 
+// Get string length
 inline t_buf_pos string_buff_strlen(STRING_BUFFER* sbuf)
 {
   return sbuf->len;
 }
 
+// Get buffer length
 inline t_buf_pos string_buff_size(STRING_BUFFER* sbuf)
 {
   return sbuf->size;
 }
+
+// Get / set characters
 
 inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index)
 {
@@ -119,6 +127,11 @@ inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index,
 {
   sbuf->buff[index] = c;
 }
+
+
+/******************************/
+/*  Resize Buffer Functions   */
+/******************************/
 
 char string_buff_resize(STRING_BUFFER *sbuf, const t_buf_pos new_size)
 {
@@ -272,14 +285,14 @@ void string_buff_to_lowercase(STRING_BUFFER *sbuf)
   }
 }
 
-void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
-                      STRING_BUFFER* src, const t_buf_pos src_pos,
-                      const t_buf_pos len)
+void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                          char* src, const t_buf_pos src_pos,
+                          const t_buf_pos len)
 {
   // Check if dest buffer can handle string plus \0
   string_buff_ensure_capacity(dst, dst_pos + len);
 
-  strncpy(dst->buff+dst_pos, src->buff+src_pos, len);
+  strncpy(dst->buff+dst_pos, src+src_pos, len);
 
   if(dst_pos + len > dst->len)
   {
@@ -287,6 +300,13 @@ void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
     dst->len = dst_pos + len;
     dst->buff[dst->len] = '\0';
   }
+}
+
+void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                      STRING_BUFFER* src, const t_buf_pos src_pos,
+                      const t_buf_pos len)
+{
+  string_buff_str_copy(dst, dst_pos, src->buff, src_pos, len);
 }
 
 /*****************/
@@ -368,10 +388,12 @@ t_buf_pos string_buff_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
   return _string_buff_readline(sbuf, NULL, gz_file);
 }
 
+/**************************/
+/*         sprintf        */
+/**************************/
 
-
-void _string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
-                             const char* fmt, ...)
+void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                            const char* fmt, ...)
 {
   size_t buf_len = (size_t)(sbuf->size - pos);
 
@@ -391,34 +413,55 @@ void _string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
 
   va_end(argptr);
 
+  // Don't need to NUL terminate, vsprintf/vnsprintf does that for us
   if(num_chars < 0)
   {
+    // Errors occurred - report, and make sure string is terminated
     fprintf(stderr, "Warning: string_buff_sprintf something went wrong..\n");
     sbuf->buff[sbuf->len] = '\0';
   }
   else
   {
+    // Update length
     sbuf->len = pos + num_chars;
   }
-
-  // Don't need to NUL terminate, vsprintf/vnsprintf does that for us
 }
 
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...)
 {
   va_list argptr;
   va_start(argptr, fmt);
-  _string_buff_sprintf_at(sbuf, 0, fmt, argptr);
+  string_buff_sprintf_at(sbuf, 0, fmt, argptr);
   va_end(argptr);
 }
 
-void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
-                            const char* fmt, ...)
+// Does not prematurely end the string if you sprintf within the string (vs at the end)
+void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                                const char* fmt, ...)
 {
   va_list argptr;
   va_start(argptr, fmt);
-  _string_buff_sprintf_at(sbuf, pos, fmt, argptr);
+
+  int num_chars = vsnprintf(NULL, 0, fmt, argptr);
+  
+  // Save overwritten char
+  char last_char;
+  
+  if(pos + num_chars < sbuf->len)
+  {
+    last_char = sbuf->buff[pos + num_chars];
+  }
+  else
+  {
+    last_char = '\0';
+  }
+
+  string_buff_sprintf_at(sbuf, pos, fmt, argptr);
+
   va_end(argptr);
+  
+  // Re-instate overwritten character
+  sbuf->buff[pos+num_chars] = last_char;
 }
 
 /**************************/

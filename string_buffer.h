@@ -85,14 +85,25 @@ char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start,
 void string_buff_to_uppercase(STRING_BUFFER *sbuf);
 void string_buff_to_lowercase(STRING_BUFFER *sbuf);
 
+// Copy a string to this STRING_BUFFER
 void string_buff_copy(STRING_BUFFER* dest, const t_buf_pos dest_pos,
                       STRING_BUFFER* src, const t_buf_pos src_pos,
                       const t_buf_pos len);
 
-// sprintf to a STRING_BUFFER
+void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                          char* src, const t_buf_pos src_pos,
+                          const t_buf_pos len);
+
+// sprintf to a STRING_BUFFER (adds string terminator after sprint)
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...);
 void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
                             const char* fmt, ...);
+
+// sprintf without terminating character
+// Does not prematurely end the string if you sprintf within the string
+// (terminates string if sprintf to the end)
+void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                                const char* fmt, ...);
 
 // Reading a FILE
 t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file);

@@ -62,6 +62,17 @@ void _test_add_char()
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 }
 
+void _test_sprintf()
+{
+  STRING_BUFFER* sbuf = string_buff_init(100);
+  
+  string_buff_sprintf(sbuf, "hi ello");
+  printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
+  
+  string_buff_sprintf_noterm(sbuf, 0, "woooooooooooooot");
+  printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
+}
+
 int main(int argc, char* argv[])
 {
   /*
@@ -76,6 +87,8 @@ int main(int argc, char* argv[])
   */
   
   _test_add_char();
+  
+  _test_sprintf();
   
   return EXIT_SUCCESS;
 }
