@@ -110,8 +110,12 @@ t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file);
 t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *gz_file);
 
 // Reading a gzFile
-t_buf_pos string_buff_reset_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
-t_buf_pos string_buff_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
+t_buf_pos string_buff_reset_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
+t_buf_pos string_buff_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
+
+// Skip a line and return how many characters were skipped
+t_buf_pos string_buff_skip_line(FILE *file);
+t_buf_pos string_buff_gzskip_line(gzFile *gz_file);
 
 // Other String functions
 long split_str(const char* split, const char* txt, char*** result);

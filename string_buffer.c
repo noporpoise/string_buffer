@@ -374,18 +374,57 @@ t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *file)
 // read gzFile
 // returns number of characters read
 // or 0 if EOF
-t_buf_pos string_buff_reset_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
+t_buf_pos string_buff_reset_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
 {
   string_buff_reset(sbuf);
-  return string_buff_zreadline(sbuf, gz_file);
+  return string_buff_gzreadline(sbuf, gz_file);
 }
 
 // read gzFile
 // returns number of characters read
 // or 0 if EOF
-t_buf_pos string_buff_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
+t_buf_pos string_buff_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
 {
   return _string_buff_readline(sbuf, NULL, gz_file);
+}
+
+
+// These two functions are the same apart from calling fgetc / gzgetc
+// (string_buff_skip_line, string_buff_gzskip_line)
+t_buf_pos string_buff_skip_line(FILE *file)
+{
+  char c;
+  t_buf_pos count = 0;
+  
+  while((c = fgetc(file)) != -1)
+  {
+    count++;
+    
+    if(c == '\n' && c == '\r')
+    {
+      break;
+    }
+  }
+
+  return count;
+}
+
+t_buf_pos string_buff_gzskip_line(gzFile *gz_file)
+{
+  char c;
+  t_buf_pos count = 0;
+  
+  while((c = gzgetc(gz_file)) != -1)
+  {
+    count++;
+    
+    if(c == '\n' && c == '\r')
+    {
+      break;
+    }
+  }
+
+  return count;
 }
 
 /**************************/
@@ -435,7 +474,8 @@ void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...)
   va_end(argptr);
 }
 
-// Does not prematurely end the string if you sprintf within the string (vs at the end)
+// Does not prematurely end the string if you sprintf within the string
+// (vs at the end)
 void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
                                 const char* fmt, ...)
 {
@@ -467,6 +507,7 @@ void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
 /**************************/
 /* Other String Functions */
 /**************************/
+
 long split_str(const char* split, const char* txt, char*** result)
 {
   size_t split_len = strlen(split);
