@@ -431,26 +431,35 @@ t_buf_pos string_buff_gzskip_line(gzFile *gz_file)
 /*         sprintf        */
 /**************************/
 
-void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
-                            const char* fmt, ...)
+void _string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                             const char* fmt, va_list argptr)
 {
+  // Length of remaining buffer
   size_t buf_len = (size_t)(sbuf->size - pos);
 
-  va_list argptr;
-  va_start(argptr, fmt);
-  
-  int num_chars = vsnprintf(sbuf->buff+pos, buf_len, fmt, argptr);
-
-  // num_chars < 0 => failure
-  // num_chars is the number of chars that would be written (not including '\0')
-  if(num_chars >= buf_len)
+  if(buf_len == 0)
   {
-    string_buff_ensure_capacity(sbuf, pos+num_chars);
-    // Don't need to use vsnprintf now
-    num_chars = vsprintf(sbuf->buff, fmt, argptr);
+    string_buff_resize(sbuf, 2*sbuf->size);
   }
 
-  va_end(argptr);
+  // Make a copy of the list of args incase we need to resize buff and try again
+  va_list argptr_cpy;
+  va_copy(argptr_cpy, argptr);
+
+  int num_chars = vsnprintf(sbuf->buff+pos, buf_len, fmt, argptr);
+
+  // num_chars is the number of chars that would be written (not including '\0')
+  // num_chars < 0 => failure
+  if(num_chars+1 >= buf_len)
+  {
+    string_buff_ensure_capacity(sbuf, pos+num_chars);
+
+    // now use the argptr copy we made earlier
+    // Don't need to use vsnprintf now, vsprintf will do since we know it'll fit
+    num_chars = vsprintf(sbuf->buff+pos, fmt, argptr_cpy);
+
+    va_end(argptr_cpy);
+  }
 
   // Don't need to NUL terminate, vsprintf/vnsprintf does that for us
   if(num_chars < 0)
@@ -466,11 +475,21 @@ void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
   }
 }
 
+// Appends sprintf
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...)
 {
   va_list argptr;
   va_start(argptr, fmt);
-  string_buff_sprintf_at(sbuf, 0, fmt, argptr);
+  _string_buff_sprintf_at(sbuf, sbuf->len, fmt, argptr);
+  va_end(argptr);
+}
+
+void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                            const char* fmt, ...)
+{
+  va_list argptr;
+  va_start(argptr, fmt);
+  _string_buff_sprintf_at(sbuf, pos, fmt, argptr);
   va_end(argptr);
 }
 
@@ -484,6 +503,8 @@ void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
 
   int num_chars = vsnprintf(NULL, 0, fmt, argptr);
   
+  va_end(argptr);
+  
   // Save overwritten char
   char last_char;
   
@@ -496,7 +517,9 @@ void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
     last_char = '\0';
   }
 
-  string_buff_sprintf_at(sbuf, pos, fmt, argptr);
+  va_start(argptr, fmt);
+
+  _string_buff_sprintf_at(sbuf, pos, fmt, argptr);
 
   va_end(argptr);
   

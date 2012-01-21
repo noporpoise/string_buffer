@@ -64,12 +64,26 @@ void _test_add_char()
 
 void _test_sprintf()
 {
+  printf("printf:\n");
   STRING_BUFFER* sbuf = string_buff_init(100);
   
   string_buff_sprintf(sbuf, "hi ello");
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
   
-  string_buff_sprintf_noterm(sbuf, 0, "woooooooooooooot");
+  string_buff_sprintf_noterm(sbuf, 0, "woot %i %s;", 12, "byebye");
+  printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
+
+  char *a = "wooo-%s-xx";
+  char *b = "hihi";
+
+  string_buff_sprintf_at(sbuf, string_buff_strlen(sbuf), a, b);
+  printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
+
+  string_buff_reset(sbuf);
+  string_buff_resize(sbuf, 10);
+  string_buff_append_str(sbuf, "asdfasdf");
+
+  string_buff_sprintf(sbuf, a, b);
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 }
 
