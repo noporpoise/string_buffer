@@ -105,6 +105,9 @@ void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
 void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
                                 const char* fmt, ...);
 
+void string_buff_vsprintf(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                          const char* fmt, va_list argptr);
+
 // Reading a FILE
 t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file);
 t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *gz_file);

@@ -431,8 +431,8 @@ t_buf_pos string_buff_gzskip_line(gzFile *gz_file)
 /*         sprintf        */
 /**************************/
 
-void _string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
-                             const char* fmt, va_list argptr)
+void string_buff_vsprintf(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                          const char* fmt, va_list argptr)
 {
   // Length of remaining buffer
   size_t buf_len = (size_t)(sbuf->size - pos);
@@ -480,7 +480,7 @@ void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...)
 {
   va_list argptr;
   va_start(argptr, fmt);
-  _string_buff_sprintf_at(sbuf, sbuf->len, fmt, argptr);
+  string_buff_vsprintf(sbuf, sbuf->len, fmt, argptr);
   va_end(argptr);
 }
 
@@ -489,7 +489,7 @@ void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
 {
   va_list argptr;
   va_start(argptr, fmt);
-  _string_buff_sprintf_at(sbuf, pos, fmt, argptr);
+  string_buff_vsprintf(sbuf, pos, fmt, argptr);
   va_end(argptr);
 }
 
@@ -519,7 +519,7 @@ void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
 
   va_start(argptr, fmt);
 
-  _string_buff_sprintf_at(sbuf, pos, fmt, argptr);
+  string_buff_vsprintf(sbuf, pos, fmt, argptr);
 
   va_end(argptr);
   
