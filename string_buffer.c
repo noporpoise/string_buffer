@@ -589,7 +589,89 @@ void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
 /* Other String Functions */
 /**************************/
 
-long split_str(const char* split, const char* txt, char*** result)
+char string_is_all_whitespace(const char* s)
+{
+  int i;
+
+  for(i = 0; s[i] != '\0'; i++)
+  {
+    if(!isspace(s[i]))
+    {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+char* string_next_nonwhitespace(const char* s)
+{
+  while(*s != '\0')
+  {
+    if(!isspace(*s))
+    {
+      return (char*)s;
+    }
+
+    s++;
+  }
+
+  return NULL;
+}
+
+// Strips whitepace from the end of the string with \0, and returns pointer to
+// first non-whitespace character
+char* string_trim(char* str)
+{
+  while(isspace(*str))
+  {
+    str++;
+  }
+
+  size_t len = strlen(str);
+
+  while(isspace(*(str+len-1)) && len > 0)
+  {
+    len--;
+  }
+
+  *(str+len) = '\0';
+
+  return str;
+}
+
+// Removes \r and \n from the ends of a string and returns the new length
+size_t string_chomp(char* str)
+{
+  size_t len = strlen(str);
+
+  while(len > 0 && (str[len-1] == '\r' || str[len-1] == '\n'))
+  {
+    len--;
+  }
+
+  str[len] = '\0';
+
+  return len;
+}
+
+// Returns count
+size_t string_count_char(const char* str, const int c)
+{
+  size_t count = 0;
+  const char *tmp = str;
+
+  while((tmp = strchr(tmp, c)) != NULL)
+  {
+    tmp++;
+    count++;
+  }
+
+  return count;
+}
+
+// Returns the number of strings resulting from the split
+long string_split(const char* split, const char* txt, char*** result)
 {
   size_t split_len = strlen(split);
   size_t txt_len = strlen(txt);

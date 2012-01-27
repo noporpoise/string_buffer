@@ -29,13 +29,12 @@
 
 typedef unsigned long t_buf_pos;
 
-//#include <stdio.h> // needed for FILE*
-
 #include <zlib.h> // needed for gzFile
 
 typedef struct STRING_BUFFER STRING_BUFFER;
 
-struct STRING_BUFFER {
+struct STRING_BUFFER
+{
   char *buff;
   t_buf_pos len; // length of the string
   t_buf_pos size; // buffer size - includes '\0' (size >= len+1)
@@ -127,7 +126,17 @@ t_buf_pos string_buff_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
 t_buf_pos string_buff_skip_line(FILE *file);
 t_buf_pos string_buff_gzskip_line(gzFile *gz_file);
 
-// Other String functions
-long split_str(const char* split, const char* txt, char*** result);
+
+
+/**************************/
+/* Other String functions */
+/**************************/
+
+char string_is_all_whitespace(const char* s);
+char* string_next_nonwhitespace(const char* s);
+char* string_trim(char* str);
+size_t string_chomp(char* str);
+size_t string_count_char(const char* str, const int c);
+long string_split(const char* split, const char* txt, char*** result);
 
 #endif

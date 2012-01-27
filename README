@@ -14,22 +14,16 @@ $ make
 
 == Functions ==
 
-// Constructors
+// Creation, reset, free and memory expansion
 STRING_BUFFER* string_buff_init(const t_buf_pos size);
 STRING_BUFFER* string_buff_create(const char* str);
-
-// Clear the contents of a STRING_BUFFER
 void string_buff_reset(STRING_BUFFER* sbuf);
-
-// Free memory used by a STRING_BUFFER
 void string_buff_free(STRING_BUFFER* sbuf);
+STRING_BUFFER* string_buff_clone(const STRING_BUFFER* sbuf);
 
-// create a copy of a STRING_BUFFER (copies contents)
-STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf);
-
-// Get string length and size of buffer
-inline t_buf_pos string_buff_strlen(STRING_BUFFER* sbuf);
-inline t_buf_pos string_buff_size(STRING_BUFFER* sbuf);
+// Get size
+inline t_buf_pos string_buff_strlen(const STRING_BUFFER* sbuf);
+inline t_buf_pos string_buff_size(const STRING_BUFFER* sbuf);
 
 //
 // Resizing
@@ -50,60 +44,77 @@ void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 // Useful String functions
 
 // get/set chars
-inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index);
+inline char string_buff_get_char(const STRING_BUFFER *sbuf,
+                                 const t_buf_pos index);
 inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index,
                                  const char c);
 
 void string_buff_append_str(STRING_BUFFER* sbuf, const char* txt);
 void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt,
                              const t_buf_pos len);
-
 void string_buff_append_char(STRING_BUFFER* sbuf, const char txt);
 void string_buff_chomp(STRING_BUFFER *sbuf);
-
 char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start,
                          const t_buf_pos len);
-
 void string_buff_to_uppercase(STRING_BUFFER *sbuf);
 void string_buff_to_lowercase(STRING_BUFFER *sbuf);
 
 // Copy a string to this STRING_BUFFER
 void string_buff_copy(STRING_BUFFER* dest, const t_buf_pos dest_pos,
-                      STRING_BUFFER* src, const t_buf_pos src_pos,
+                      const STRING_BUFFER* src, const t_buf_pos src_pos,
                       const t_buf_pos len);
 
 void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
-                          char* src, const t_buf_pos src_pos,
-                          const t_buf_pos len);
+                          const char* src, const t_buf_pos len);
 
-// sprintf to a STRING_BUFFER
+void string_buff_insert(STRING_BUFFER* dest, const t_buf_pos dest_pos,
+                        const STRING_BUFFER* src, const t_buf_pos src_pos,
+                        const t_buf_pos len);
+
+void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                            const char* src, const t_buf_pos len);
+
+// sprintf to a STRING_BUFFER (adds string terminator after sprint)
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...);
 void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
                             const char* fmt, ...);
 
-// sprintf without shortening string
+// sprintf without terminating character
 // Does not prematurely end the string if you sprintf within the string
-// (terminates string if sprintf extends the string - so it's safe!)
+// (terminates string if sprintf to the end)
 void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
                                 const char* fmt, ...);
 
+void string_buff_vsprintf(STRING_BUFFER *sbuf, const t_buf_pos pos,
+                          const char* fmt, va_list argptr);
+
 // Reading a FILE
-// Clear string and readline
 t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file);
-// Append to the end of this string
 t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *gz_file);
 
 // Reading a gzFile
-// Clear string and readline
-t_buf_pos string_buff_reset_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
-// Append to the end of this string
-t_buf_pos string_buff_zreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
+t_buf_pos string_buff_reset_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
+t_buf_pos string_buff_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
+
+// Skip a line and return how many characters were skipped
+t_buf_pos string_buff_skip_line(FILE *file);
+t_buf_pos string_buff_gzskip_line(gzFile *gz_file);
 
 
-//
-// Other String functions
-//
-long split_str(const char* split, const char* txt, char*** result);
+
+/**************************/
+/* Other String functions */
+/**************************/
+
+char string_is_all_whitespace(const char* s);
+char* string_next_nonwhitespace(const char* s);
+char* string_trim(char* str);
+size_t string_chomp(char* str);
+size_t string_count_char(const char* str, const int c);
+long string_split(const char* split, const char* txt, char*** result);
+
+
+/* Other Things: */
 
 // To access the char* buffer (of some STRING_BUFFER* buffer), use:
 // (but it's best not to do this)

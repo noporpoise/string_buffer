@@ -35,7 +35,7 @@ void _test_split(char* split, char* txt)
   
   printf("split '%s' by '%s':\n", txt, split);
   
-  long count = split_str(split, txt, &results);
+  long count = string_split(split, txt, &results);
 
   if(count > 0)
   {
