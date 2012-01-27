@@ -90,7 +90,7 @@ void string_buff_free(STRING_BUFFER* sbuf)
   free(sbuf);
 }
 
-STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf)
+STRING_BUFFER* string_buff_clone(const STRING_BUFFER* sbuf)
 {
   // One byte for the string end / null char \0
   STRING_BUFFER* sbuf_cpy = string_buff_init(sbuf->len+1);
@@ -104,20 +104,21 @@ STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf)
 }
 
 // Get string length
-inline t_buf_pos string_buff_strlen(STRING_BUFFER* sbuf)
+inline t_buf_pos string_buff_strlen(const STRING_BUFFER* sbuf)
 {
   return sbuf->len;
 }
 
 // Get buffer length
-inline t_buf_pos string_buff_size(STRING_BUFFER* sbuf)
+inline t_buf_pos string_buff_size(const STRING_BUFFER* sbuf)
 {
   return sbuf->size;
 }
 
 // Get / set characters
 
-inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index)
+inline char string_buff_get_char(const STRING_BUFFER *sbuf,
+                                 const t_buf_pos index)
 {
   return sbuf->buff[index];
 }
@@ -248,7 +249,7 @@ char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start,
   char* mem_start = sbuf->buff + start;
   t_buf_pos mem_length = MIN(len, sbuf->buff + sbuf->len - mem_start);
 
-  if (mem_length < 0)
+  if(mem_length < 0)
   {
     fprintf(stderr, "string_buff_substr(%lui, %lui) end < start on "
                     "STRING_BUFFER with length %lui\n",
@@ -285,14 +286,33 @@ void string_buff_to_lowercase(STRING_BUFFER *sbuf)
   }
 }
 
-void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
-                          char* src, const t_buf_pos src_pos,
-                          const t_buf_pos len)
+void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                      const STRING_BUFFER* src, const t_buf_pos src_pos,
+                      const t_buf_pos len)
 {
+  string_buff_str_copy(dst, dst_pos, src->buff+src_pos, len);
+}
+
+void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
+                          const char* src, const t_buf_pos len)
+{
+  t_buf_pos dst_pos = ddst_pos;
+
+  if(src == NULL || len == 0)
+  {
+    return;
+  }
+  else if(dst_pos > dst->len)
+  {
+    // Insert position cannot be greater than current string length
+    dst_pos = dst->len;
+  }
+
   // Check if dest buffer can handle string plus \0
   string_buff_ensure_capacity(dst, dst_pos + len);
 
-  strncpy(dst->buff+dst_pos, src+src_pos, len);
+  // memmove instead of strncpy, as it can handle overlapping regions
+  memmove(dst->buff+dst_pos, src, (size_t)len);
 
   if(dst_pos + len > dst->len)
   {
@@ -302,12 +322,50 @@ void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
   }
 }
 
-void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
-                      STRING_BUFFER* src, const t_buf_pos src_pos,
-                      const t_buf_pos len)
+void string_buff_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                        const STRING_BUFFER* src, const t_buf_pos src_pos,
+                        const t_buf_pos len)
 {
-  string_buff_str_copy(dst, dst_pos, src->buff, src_pos, len);
+  string_buff_str_insert(dst, dst_pos, src->buff+src_pos, len);
 }
+
+void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
+                            const char* src, const t_buf_pos len)
+{
+  t_buf_pos dst_pos = ddst_pos;
+
+  if(src == NULL || len == 0)
+  {
+    return;
+  }
+  else if(dst_pos > dst->len)
+  {
+    // Insert position cannot be greater than current string length
+    dst_pos = dst->len;
+  }
+
+  // Check if dest buffer can handle string plus \0
+  string_buff_ensure_capacity(dst, dst_pos + len);
+
+  if(dst_pos <= dst->len - 1)
+  {
+    // Shift some characters up
+    memmove(dst->buff + dst_pos + len,
+            dst + dst_pos,
+            (size_t)(dst->len - dst_pos));
+  }
+
+  // Insert
+  memmove(dst->buff + dst_pos, src, (size_t)len);
+
+  if(dst_pos + len > dst->len)
+  {
+    // Update size
+    dst->len = dst_pos + len;
+    dst->buff[dst->len] = '\0';
+  }
+}
+
 
 /*****************/
 /* File handling */

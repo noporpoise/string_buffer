@@ -46,11 +46,11 @@ STRING_BUFFER* string_buff_init(const t_buf_pos size);
 STRING_BUFFER* string_buff_create(const char* str);
 void string_buff_reset(STRING_BUFFER* sbuf);
 void string_buff_free(STRING_BUFFER* sbuf);
-STRING_BUFFER* string_buff_clone(STRING_BUFFER* sbuf);
+STRING_BUFFER* string_buff_clone(const STRING_BUFFER* sbuf);
 
 // Get size
-inline t_buf_pos string_buff_strlen(STRING_BUFFER* sbuf);
-inline t_buf_pos string_buff_size(STRING_BUFFER* sbuf);
+inline t_buf_pos string_buff_strlen(const STRING_BUFFER* sbuf);
+inline t_buf_pos string_buff_size(const STRING_BUFFER* sbuf);
 
 //
 // Resizing
@@ -71,7 +71,8 @@ void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 // Useful String functions
 
 // get/set chars
-inline char string_buff_get_char(STRING_BUFFER *sbuf, const t_buf_pos index);
+inline char string_buff_get_char(const STRING_BUFFER *sbuf,
+                                 const t_buf_pos index);
 inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index,
                                  const char c);
 
@@ -87,12 +88,18 @@ void string_buff_to_lowercase(STRING_BUFFER *sbuf);
 
 // Copy a string to this STRING_BUFFER
 void string_buff_copy(STRING_BUFFER* dest, const t_buf_pos dest_pos,
-                      STRING_BUFFER* src, const t_buf_pos src_pos,
+                      const STRING_BUFFER* src, const t_buf_pos src_pos,
                       const t_buf_pos len);
 
 void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
-                          char* src, const t_buf_pos src_pos,
-                          const t_buf_pos len);
+                          const char* src, const t_buf_pos len);
+
+void string_buff_insert(STRING_BUFFER* dest, const t_buf_pos dest_pos,
+                        const STRING_BUFFER* src, const t_buf_pos src_pos,
+                        const t_buf_pos len);
+
+void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                            const char* src, const t_buf_pos len);
 
 // sprintf to a STRING_BUFFER (adds string terminator after sprint)
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...);
