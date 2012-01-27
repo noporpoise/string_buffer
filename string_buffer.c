@@ -226,6 +226,17 @@ void string_buff_append_char(STRING_BUFFER* sbuf, const char c)
   sbuf->buff[sbuf->len] = '\0';
 }
 
+// Copy a STRING_BUFFER to the end of this STRING_BUFFER
+void string_buff_append_buff(STRING_BUFFER* dst, STRING_BUFFER* src)
+{
+  string_buff_ensure_capacity(dst, dst->len + src->len);
+
+  memcpy(dst->buff + dst->len, src->buff, src->len);
+
+  dst->len += src->len;
+  dst->buff[dst->len] = '\0';
+}
+
 void string_buff_chomp(STRING_BUFFER *sbuf)
 {
   while(sbuf->len >= 1)
