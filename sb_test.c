@@ -26,14 +26,42 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "string_buffer.h"
+
+void _test_trim(const char* str)
+{
+  size_t len = strlen(str);
+  char* str_cpy = (char*) malloc(len+1);
+  strcpy(str_cpy, str);
+  char* new_str = string_trim(str_cpy);
+
+  printf("trim('%s'): '%s'\n", str, new_str);
+}
+
+void test_trim()
+{
+  printf("Test trim:\n");
+  _test_trim("  \t asdf asdf \n ");
+  _test_trim("a");
+  _test_trim("");
+}
+
+void test_all_whitespace()
+{
+  printf("Test string_is_all_whitespace:\n");
+  char* str = "  \tasdf";
+  printf("string_is_all_whitespace('%s'): %i\n", str, string_is_all_whitespace(str));
+  str = "  \t ";
+  printf("string_is_all_whitespace('%s'): %i\n", str, string_is_all_whitespace(str));
+}
 
 void _test_split(char* split, char* txt)
 {
   char** results;
   
-  printf("split '%s' by '%s':\n", txt, split);
+  printf("split '%s' by '%s': (", txt, split);
   
   long count = string_split(split, txt, &results);
 
@@ -44,16 +72,28 @@ void _test_split(char* split, char* txt)
     int i;
     for(i = 1; i < count; i++)
     {
-      printf(",'%s'", results[i]);
+      printf(", '%s'", results[i]);
       free(results[i]);
     }
     free(results);
   }
 
-  printf("\n");
+  printf(")\n");
 }
 
-void _test_add_char()
+void test_split()
+{
+  _test_split("/", "a/b");
+  _test_split("/", "/");
+  _test_split("/", "/b");
+  _test_split("/", "a/");
+  _test_split("/", "asdf");
+  _test_split("/", "");
+  _test_split("", "asdf");
+  _test_split("", "");
+}
+
+void test_add_char()
 {
   STRING_BUFFER* sbuf = string_buff_init(100);
   
@@ -62,7 +102,7 @@ void _test_add_char()
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 }
 
-void _test_sprintf()
+void test_sprintf()
 {
   printf("printf:\n");
   STRING_BUFFER* sbuf = string_buff_init(100);
@@ -89,20 +129,14 @@ void _test_sprintf()
 
 int main(int argc, char* argv[])
 {
-  /*
-  _test_split("/", "a/b");
-  _test_split("/", "/");
-  _test_split("/", "/b");
-  _test_split("/", "a/");
-  _test_split("/", "asdf");
-  _test_split("/", "");
-  _test_split("", "asdf");
-  _test_split("", "");
-  */
+  // StringBuffer functions
+  test_add_char();
+  test_sprintf();
   
-  _test_add_char();
-  
-  _test_sprintf();
+  // char array functions
+  test_all_whitespace();
+  test_split();
+  test_trim();
   
   return EXIT_SUCCESS;
 }

@@ -630,7 +630,7 @@ char* string_trim(char* str)
 
   size_t len = strlen(str);
 
-  while(isspace(*(str+len-1)) && len > 0)
+  while(len > 0 && isspace(*(str+len-1)))
   {
     len--;
   }
