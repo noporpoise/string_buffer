@@ -120,15 +120,43 @@ inline t_buf_pos string_buff_size(const STRING_BUFFER* sbuf)
 inline char string_buff_get_char(const STRING_BUFFER *sbuf,
                                  const t_buf_pos index)
 {
+  // Bounds checking
+  if(index >= sbuf->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_get_char(index: %lu) [strlen: %lu]\n",
+            (unsigned long)index, (unsigned long)sbuf->len);
+
+    return -1;
+  }
+
   return sbuf->buff[index];
 }
 
 inline void string_buff_set_char(STRING_BUFFER *sbuf, const t_buf_pos index,
                                  const char c)
 {
-  sbuf->buff[index] = c;
-}
+  // Bounds checking
+  if(index > sbuf->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_set_char(index: %lu, %c) [strlen: %lu]\n",
+            (unsigned long)index, c, (unsigned long)sbuf->len);
 
+    return;
+  }
+  else if(index == sbuf->len)
+  {
+    // Extend
+    string_buff_ensure_capacity(sbuf, sbuf->len + 1);
+    sbuf->buff[sbuf->len++] = c;
+    sbuf->buff[sbuf->len] = '\0';
+  }
+  else
+  {
+    sbuf->buff[index] = c;
+  }
+}
 
 /******************************/
 /*  Resize Buffer Functions   */
@@ -257,20 +285,19 @@ void string_buff_chomp(STRING_BUFFER *sbuf)
 char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start,
                          const t_buf_pos len)
 {
-  char* mem_start = sbuf->buff + start;
-  t_buf_pos mem_length = MIN(len, sbuf->buff + sbuf->len - mem_start);
-
-  if(mem_length < 0)
+  // Bounds checking
+  if(start + len >= sbuf->len)
   {
-    fprintf(stderr, "string_buff_substr(%lui, %lui) end < start on "
-                    "STRING_BUFFER with length %lui\n",
-            start, len, sbuf->len);
-    exit(-1);
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_substr(start: %lui, len: %lui) [strlen: %lu]\n",
+            (unsigned long)start, (unsigned long)len, (unsigned long)sbuf->len);
+
+    return NULL;
   }
 
-  char* new_string = (char*) malloc(mem_length+1);
-  strncpy(new_string, mem_start, mem_length);
-  new_string[mem_length] = '\0';
+  char* new_string = (char*) malloc(len+1);
+  strncpy(new_string, sbuf->buff + start, len);
+  new_string[len] = '\0';
 
   return new_string;
 }
@@ -301,6 +328,15 @@ void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
                       const STRING_BUFFER* src, const t_buf_pos src_pos,
                       const t_buf_pos len)
 {
+  if(dst_pos > dst->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_copy(index: %lu) [strlen: %lu]",
+            (unsigned long)dst_pos, (unsigned long)dst->len);
+
+    return;
+  }
+
   string_buff_str_copy(dst, dst_pos, src->buff+src_pos, len);
 }
 
@@ -316,7 +352,11 @@ void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
   else if(dst_pos > dst->len)
   {
     // Insert position cannot be greater than current string length
-    dst_pos = dst->len;
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_str_copy(index: %lu) [strlen: %lu]",
+            (unsigned long)dst_pos, (unsigned long)dst->len);
+
+    return;
   }
 
   // Check if dest buffer can handle string plus \0
@@ -337,6 +377,15 @@ void string_buff_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
                         const STRING_BUFFER* src, const t_buf_pos src_pos,
                         const t_buf_pos len)
 {
+  if(dst_pos > dst->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_insert(index: %lu) [strlen: %lu]",
+            (unsigned long)dst_pos, (unsigned long)dst->len);
+
+    return;
+  }
+
   string_buff_str_insert(dst, dst_pos, src->buff+src_pos, len);
 }
 
@@ -352,7 +401,11 @@ void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
   else if(dst_pos > dst->len)
   {
     // Insert position cannot be greater than current string length
-    dst_pos = dst->len;
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_str_insert(index: %lu) [strlen: %lu]",
+            (unsigned long)dst_pos, (unsigned long)dst->len);
+
+    return;
   }
 
   // Check if dest buffer can handle string plus \0
@@ -503,6 +556,16 @@ t_buf_pos string_buff_gzskip_line(gzFile *gz_file)
 void string_buff_vsprintf(STRING_BUFFER *sbuf, const t_buf_pos pos,
                           const char* fmt, va_list argptr)
 {
+  // Bounds check
+  if(pos > sbuf->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_vsprintf(index: %lu) [strlen: %lu]",
+            (unsigned long)pos, (unsigned long)sbuf->len);
+
+    return;
+  }
+
   // Length of remaining buffer
   size_t buf_len = (size_t)(sbuf->size - pos);
 
@@ -556,6 +619,16 @@ void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...)
 void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
                             const char* fmt, ...)
 {
+  // Bounds check
+  if(pos > sbuf->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_sprintf_at(index: %lu) [strlen: %lu]",
+            (unsigned long)pos, (unsigned long)sbuf->len);
+
+    return;
+  }
+
   va_list argptr;
   va_start(argptr, fmt);
   string_buff_vsprintf(sbuf, pos, fmt, argptr);
@@ -567,6 +640,16 @@ void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
 void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
                                 const char* fmt, ...)
 {
+  // Bounds check
+  if(pos > sbuf->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_sprintf_noterm(index: %lu) [strlen: %lu]",
+            (unsigned long)pos, (unsigned long)sbuf->len);
+
+    return;
+  }
+
   va_list argptr;
   va_start(argptr, fmt);
 

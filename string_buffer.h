@@ -52,6 +52,7 @@ inline t_buf_pos string_buff_size(const STRING_BUFFER* sbuf);
 
 //
 // Resizing
+//
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
 void string_buff_ensure_capacity(STRING_BUFFER *sbuf, const t_buf_pos len);
@@ -67,6 +68,7 @@ void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 
 //
 // Useful String functions
+//
 
 // get/set chars
 inline char string_buff_get_char(const STRING_BUFFER *sbuf,
@@ -112,6 +114,10 @@ void string_buff_insert(STRING_BUFFER* dest, const t_buf_pos dest_pos,
 void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
                             const char* src, const t_buf_pos len);
 
+//
+// sprintf
+//
+
 // sprintf to a STRING_BUFFER (adds string terminator after sprint)
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...);
 void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
@@ -124,6 +130,10 @@ void string_buff_vsprintf(STRING_BUFFER *sbuf, const t_buf_pos pos,
 // (terminates string if sprintf to the end)
 void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
                                 const char* fmt, ...);
+
+//
+// Reading files
+//
 
 // Reading a FILE
 t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file);
