@@ -90,6 +90,14 @@ void string_buff_free(STRING_BUFFER* sbuf)
   free(sbuf);
 }
 
+// Free sbuf struct, but retain and return the char array
+char* string_buff_free_get_str(STRING_BUFFER* sbuf)
+{
+  char *buff = sbuf->buff;
+  free(sbuf->buff);
+  return buff;
+}
+
 STRING_BUFFER* string_buff_clone(const STRING_BUFFER* sbuf)
 {
   // One byte for the string end / null char \0
@@ -101,6 +109,23 @@ STRING_BUFFER* string_buff_clone(const STRING_BUFFER* sbuf)
   sbuf_cpy->len = sbuf->len;
   
   return sbuf_cpy;
+}
+
+// Get a copy of this STRING_BUFFER as a char array
+// Returns NULL if not enough memory
+char* string_buff_as_str(const STRING_BUFFER* sbuf)
+{
+  char* cpy = (char*) malloc(sbuf->len+1);
+
+  if(cpy == NULL)
+  {
+    return NULL;
+  }
+
+  memcpy(cpy, sbuf->buff, sbuf->len);
+  cpy[sbuf->len] = '\0';
+
+  return cpy;
 }
 
 // Get string length
@@ -717,11 +742,7 @@ char* string_next_nonwhitespace(const char* s)
 // first non-whitespace character
 char* string_trim(char* str)
 {
-  while(isspace(*str))
-  {
-    str++;
-  }
-
+  // Work backwards
   size_t len = strlen(str);
 
   while(len > 0 && isspace(*(str+len-1)))
@@ -730,6 +751,12 @@ char* string_trim(char* str)
   }
 
   *(str+len) = '\0';
+
+  // Work forwards
+  while(isspace(*str)) // don't need start < len because will hit \0
+  {
+    str++;
+  }
 
   return str;
 }

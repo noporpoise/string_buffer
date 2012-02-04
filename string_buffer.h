@@ -39,12 +39,28 @@ struct STRING_BUFFER
   t_buf_pos size; // buffer size - includes '\0' (size >= len+1)
 };
 
+//
 // Creation, reset, free and memory expansion
+//
+
+// Constructors
 STRING_BUFFER* string_buff_init(const t_buf_pos size);
 STRING_BUFFER* string_buff_create(const char* str);
-void string_buff_reset(STRING_BUFFER* sbuf);
+
+// Destructors
 void string_buff_free(STRING_BUFFER* sbuf);
+// Free sbuf struct, but retain and return the char array
+char* string_buff_free_get_str(STRING_BUFFER* sbuf);
+
+// Clone a buffer (including content)
 STRING_BUFFER* string_buff_clone(const STRING_BUFFER* sbuf);
+
+// Get a copy of this STRING_BUFFER as a char array
+// Returns NULL if not enough memory
+char* string_buff_as_str(const STRING_BUFFER* sbuf);
+
+// Clear the content of an existing STRING_BUFFER (sets size to 0)
+void string_buff_reset(STRING_BUFFER* sbuf);
 
 // Get size
 inline t_buf_pos string_buff_strlen(const STRING_BUFFER* sbuf);

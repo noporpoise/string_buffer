@@ -7,5 +7,5 @@ all:
 
 clean:
 	if test -e string_buffer_test; then rm string_buffer_test; fi
-	for file in $(wildcard *.dSYM); do rm -r $$file; done
-	for file in $(wildcard *.greg); do rm $$file; done
+	if test -e string_buffer_test.dSYM; then rm -r string_buffer_test.dSYM; fi
+	if test -e string_buffer_test.greg; then rm string_buffer_test.greg; fi
