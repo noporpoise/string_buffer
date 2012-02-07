@@ -28,6 +28,7 @@
 #define STRING_BUFFER_FILE_SEEN
 
 #include <zlib.h> // needed for gzFile
+#include <stdarg.h> // required for va_list
 
 typedef unsigned long t_buf_pos;
 typedef struct STRING_BUFFER STRING_BUFFER;
