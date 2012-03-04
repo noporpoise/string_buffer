@@ -77,11 +77,7 @@ STRING_BUFFER* string_buff_create(const char* str)
 void string_buff_reset(STRING_BUFFER* sbuf)
 {
   sbuf->len = 0;
-  
-  if(sbuf->size > 0)
-  {
-    sbuf->buff[0] = '\0';
-  }
+  sbuf->buff[0] = '\0';
 }
 
 void string_buff_free(STRING_BUFFER* sbuf)
