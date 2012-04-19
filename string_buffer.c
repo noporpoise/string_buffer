@@ -352,8 +352,16 @@ void string_buff_copy(STRING_BUFFER* dst, const t_buf_pos dst_pos,
   if(dst_pos > dst->len)
   {
     fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
-                    "string_buff_copy(index: %lu) [strlen: %lu]",
-            (unsigned long)dst_pos, (unsigned long)dst->len);
+                    "string_buff_copy [dst; pos: %lu; len: %lu; strlen: %lu]",
+            (unsigned long)dst_pos, (unsigned long)len, (unsigned long)dst->len);
+
+    return;
+  }
+  else if(src_pos + len > src->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_copy [src; pos: %lu; len: %lu; strlen: %lu]",
+            (unsigned long)src_pos, (unsigned long)len, (unsigned long)src->len);
 
     return;
   }
@@ -380,7 +388,7 @@ void string_buff_str_copy(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
     return;
   }
 
-  // Check if dest buffer can handle string plus \0
+  // Check if dest buffer can handle string
   string_buff_ensure_capacity(dst, dst_pos + len);
 
   // memmove instead of strncpy, as it can handle overlapping regions
