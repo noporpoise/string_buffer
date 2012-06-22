@@ -40,6 +40,12 @@
 /*  Constructors/Destructors  */
 /******************************/
 
+// Return default length string buffer
+STRING_BUFFER* string_buff_new()
+{
+  return string_buff_init(256);
+}
+
 STRING_BUFFER* string_buff_init(const t_buf_pos size)
 {
   t_buf_pos new_size = size < MIN_SIZE ? MIN_SIZE : size;

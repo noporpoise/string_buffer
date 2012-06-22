@@ -28,15 +28,29 @@ char* str = buffer->buff;
 
 == Functions ==
 
-typedef unsigned long t_buf_pos;
-typedef struct STRING_BUFFER STRING_BUFFER;
-
+//
 // Creation, reset, free and memory expansion
+//
+
+// Constructors
+STRING_BUFFER* string_buff_new();
 STRING_BUFFER* string_buff_init(const t_buf_pos size);
 STRING_BUFFER* string_buff_create(const char* str);
-void string_buff_reset(STRING_BUFFER* sbuf);
+
+// Destructors
 void string_buff_free(STRING_BUFFER* sbuf);
+// Free sbuf struct, but retain and return the char array
+char* string_buff_free_get_str(STRING_BUFFER* sbuf);
+
+// Clone a buffer (including content)
 STRING_BUFFER* string_buff_clone(const STRING_BUFFER* sbuf);
+
+// Get a copy of this STRING_BUFFER as a char array
+// Returns NULL if not enough memory
+char* string_buff_as_str(const STRING_BUFFER* sbuf);
+
+// Clear the content of an existing STRING_BUFFER (sets size to 0)
+void string_buff_reset(STRING_BUFFER* sbuf);
 
 // Get size
 inline t_buf_pos string_buff_strlen(const STRING_BUFFER* sbuf);
@@ -44,6 +58,7 @@ inline t_buf_pos string_buff_size(const STRING_BUFFER* sbuf);
 
 //
 // Resizing
+//
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
 void string_buff_ensure_capacity(STRING_BUFFER *sbuf, const t_buf_pos len);
@@ -59,6 +74,7 @@ void string_buff_shrink(STRING_BUFFER *sbuf, const t_buf_pos new_len);
 
 //
 // Useful String functions
+//
 
 // get/set chars
 inline char string_buff_get_char(const STRING_BUFFER *sbuf,
@@ -78,6 +94,13 @@ void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt,
 
 // Remove \r and \n characters from the end of this STRING_BUFFER
 void string_buff_chomp(STRING_BUFFER *sbuf);
+
+// Reverse a string
+void string_buff_reverse(STRING_BUFFER *sbuf);
+
+// Reverse a string region
+void string_buff_reverse_region(STRING_BUFFER *sbuf,
+                                t_buf_pos start, t_buf_pos length);
 
 // Get a substring as a new null terminated char array
 // (remember to free the returned char* after you're done with it!)
@@ -104,6 +127,10 @@ void string_buff_insert(STRING_BUFFER* dest, const t_buf_pos dest_pos,
 void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
                             const char* src, const t_buf_pos len);
 
+//
+// sprintf
+//
+
 // sprintf to a STRING_BUFFER (adds string terminator after sprint)
 void string_buff_sprintf(STRING_BUFFER *sbuf, const char* fmt, ...);
 void string_buff_sprintf_at(STRING_BUFFER *sbuf, const t_buf_pos pos,
@@ -117,6 +144,10 @@ void string_buff_vsprintf(STRING_BUFFER *sbuf, const t_buf_pos pos,
 void string_buff_sprintf_noterm(STRING_BUFFER *sbuf, const t_buf_pos pos,
                                 const char* fmt, ...);
 
+//
+// Reading files
+//
+
 // Reading a FILE
 t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file);
 t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *gz_file);
@@ -129,6 +160,9 @@ t_buf_pos string_buff_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
 t_buf_pos string_buff_skip_line(FILE *file);
 t_buf_pos string_buff_gzskip_line(gzFile *gz_file);
 
+// Read a line but no more than len bytes
+t_buf_pos string_buff_read(STRING_BUFFER *sbuf, FILE *file, t_buf_pos len);
+t_buf_pos string_buff_gzread(STRING_BUFFER *sbuf, gzFile *file, t_buf_pos len);
 
 /**************************/
 /* Other String functions */

@@ -45,6 +45,7 @@ struct STRING_BUFFER
 //
 
 // Constructors
+STRING_BUFFER* string_buff_new();
 STRING_BUFFER* string_buff_init(const t_buf_pos size);
 STRING_BUFFER* string_buff_create(const char* str);
 
