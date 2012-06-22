@@ -106,6 +106,13 @@ void string_buff_append_strn(STRING_BUFFER* sbuf, const char* txt,
 // Remove \r and \n characters from the end of this STRING_BUFFER
 void string_buff_chomp(STRING_BUFFER *sbuf);
 
+// Reverse a string
+void string_buff_reverse(STRING_BUFFER *sbuf);
+
+// Reverse a string region
+void string_buff_reverse_region(STRING_BUFFER *sbuf,
+                                t_buf_pos start, t_buf_pos length);
+
 // Get a substring as a new null terminated char array
 // (remember to free the returned char* after you're done with it!)
 char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start,
@@ -164,6 +171,9 @@ t_buf_pos string_buff_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file);
 t_buf_pos string_buff_skip_line(FILE *file);
 t_buf_pos string_buff_gzskip_line(gzFile *gz_file);
 
+// Read a line but no more than len bytes
+t_buf_pos string_buff_read(STRING_BUFFER *sbuf, FILE *file, t_buf_pos len);
+t_buf_pos string_buff_gzread(STRING_BUFFER *sbuf, gzFile *file, t_buf_pos len);
 
 /**************************/
 /* Other String functions */

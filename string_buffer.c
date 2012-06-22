@@ -303,6 +303,46 @@ void string_buff_chomp(STRING_BUFFER *sbuf)
   }
 }
 
+// Reverse a string
+void string_buff_reverse(STRING_BUFFER *sbuf)
+{
+  t_buf_pos half_way = sbuf->len >> 1;
+  t_buf_pos i;
+
+  for (i = 0; i < half_way; i++)
+  {
+    char tmp = sbuf->buff[sbuf->len - 1 - i];
+    sbuf->buff[sbuf->len - 1 - i] = sbuf->buff[i];
+    sbuf->buff[i] = tmp;
+  }
+}
+
+// Reverse a string region
+void string_buff_reverse_region(STRING_BUFFER *sbuf,
+                                t_buf_pos start, t_buf_pos length)
+{
+  t_buf_pos left = start;
+  t_buf_pos right = start + length - 1;
+
+  // bounds check
+  if(right >= sbuf->len)
+  {
+    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
+                    "string_buff_reverse_region(start: %lui, len: %lui) "
+                    "[strlen: %lu]\n",
+            (unsigned long)start, (unsigned long)length,
+            (unsigned long)sbuf->len);
+    return;
+  }
+
+  for(; left < right; left++, right--)
+  {
+    char tmp = sbuf->buff[left];
+    sbuf->buff[left] = sbuf->buff[right];
+    sbuf->buff[right] = tmp;
+  }
+}
+
 char* string_buff_substr(STRING_BUFFER *sbuf, const t_buf_pos start,
                          const t_buf_pos len)
 {
@@ -464,45 +504,64 @@ void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
 /* File handling */
 /*****************/
 
-t_buf_pos _string_buff_readline(STRING_BUFFER *sbuf, FILE *file, gzFile *gz_file)
-{
-  t_buf_pos init_str_len = sbuf->len;
-
-  // Enlarge *str allocated mem if needed
-  // Need to be able to read it AT LEAST one character
-  string_buff_ensure_capacity(sbuf, sbuf->len+1);
-
-  // max characters to read = sbuf.size - sbuf.len
-  while((gz_file != NULL && gzgets(gz_file, (char*)(sbuf->buff + sbuf->len),
-                                   sbuf->size - sbuf->len) != Z_NULL) ||
-        (file != NULL && fgets((char*)(sbuf->buff + sbuf->len),
-                               sbuf->size - sbuf->len, file) != NULL))
-  {
-    // Check if we hit the end of the line
-    t_buf_pos num_of_chars_read = (t_buf_pos)strlen(sbuf->buff + sbuf->len);
-    char* last_char = (char*)(sbuf->buff + sbuf->len + num_of_chars_read - 1);
-
-    // Get the new length of the string buffer
-    // count should include the return chars
-    sbuf->len += num_of_chars_read;
-    
-    if(*last_char == '\n' || *last_char == '\r')
-    {
-      // Return characters read
-      return sbuf->len - init_str_len;
-    }
-    else
-    {
-      // Hit end of buffer - double buffer size
-      string_buff_resize_vital(sbuf, 2*sbuf->size);
-    }
-  }
-
-  t_buf_pos total_chars_read = sbuf->len - init_str_len;
-
-  return total_chars_read;
+#define _func_read(name,type,func) \
+t_buf_pos name(STRING_BUFFER *sbuf, type *file, t_buf_pos len)                 \
+{                                                                              \
+  string_buff_ensure_capacity(sbuf, sbuf->len + len);                          \
+                                                                               \
+  if(func)                                                                     \
+  {                                                                            \
+    return 0;                                                                  \
+  }                                                                            \
+                                                                               \
+  t_buf_pos num_of_chars_read = (t_buf_pos)strlen(sbuf->buff + sbuf->len);     \
+  sbuf->len += num_of_chars_read;                                              \
+  return num_of_chars_read;                                                    \
 }
 
+_func_read(string_buff_gzread, gzFile,
+           gzgets(file, (char*)(sbuf->buff + sbuf->len),
+                  sbuf->size - sbuf->len) == Z_NULL)
+
+_func_read(string_buff_read, FILE,
+           fgets((char*)(sbuf->buff + sbuf->len),
+                 sbuf->size - sbuf->len, file) == NULL)
+
+#define _func_readline(name,type,func) \
+t_buf_pos name(STRING_BUFFER *sbuf, type *file)                                \
+{                                                                              \
+  t_buf_pos init_str_len = sbuf->len;                                          \
+  string_buff_ensure_capacity(sbuf, sbuf->len+1);                              \
+  while(func)                                                                  \
+  {                                                                            \
+    t_buf_pos num_of_chars_read = (t_buf_pos)strlen(sbuf->buff + sbuf->len);   \
+    char* last_char = (char*)(sbuf->buff + sbuf->len + num_of_chars_read - 1); \
+    sbuf->len += num_of_chars_read;                                            \
+    if(*last_char == '\n' || *last_char == '\r')                               \
+    {                                                                          \
+      return sbuf->len - init_str_len;                                         \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+      string_buff_resize_vital(sbuf, 2*sbuf->size);                            \
+    }                                                                          \
+  }                                                                            \
+  return (sbuf->len - init_str_len);                                           \
+}
+
+// read gzFile
+// returns number of characters read
+// or 0 if EOF
+_func_readline(string_buff_gzreadline, gzFile,
+               gzgets(file, (char*)(sbuf->buff + sbuf->len),
+                      sbuf->size - sbuf->len) != Z_NULL)
+
+// read FILE
+// returns number of characters read
+// or 0 if EOF
+_func_readline(string_buff_readline, FILE,
+               fgets((char*)(sbuf->buff + sbuf->len),
+                     sbuf->size - sbuf->len, file) != NULL)
 
 // read FILE
 // returns number of characters read
@@ -513,14 +572,6 @@ t_buf_pos string_buff_reset_readline(STRING_BUFFER *sbuf, FILE *file)
   return string_buff_readline(sbuf, file);
 }
 
-// read FILE
-// returns number of characters read
-// or 0 if EOF
-t_buf_pos string_buff_readline(STRING_BUFFER *sbuf, FILE *file)
-{
-  return _string_buff_readline(sbuf, file, NULL);
-}
-
 
 // read gzFile
 // returns number of characters read
@@ -529,14 +580,6 @@ t_buf_pos string_buff_reset_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
 {
   string_buff_reset(sbuf);
   return string_buff_gzreadline(sbuf, gz_file);
-}
-
-// read gzFile
-// returns number of characters read
-// or 0 if EOF
-t_buf_pos string_buff_gzreadline(STRING_BUFFER *sbuf, gzFile *gz_file)
-{
-  return _string_buff_readline(sbuf, NULL, gz_file);
 }
 
 
