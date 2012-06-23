@@ -452,19 +452,10 @@ void string_buff_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
                         const STRING_BUFFER* src, const t_buf_pos src_pos,
                         const t_buf_pos len)
 {
-  if(dst_pos > dst->len)
-  {
-    fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
-                    "string_buff_insert(index: %lu) [strlen: %lu]",
-            (unsigned long)dst_pos, (unsigned long)dst->len);
-
-    return;
-  }
-
-  string_buff_str_insert(dst, dst_pos, src->buff+src_pos, len);
+  string_buff_insert_str(dst, dst_pos, src->buff+src_pos, len);
 }
 
-void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
+void string_buff_insert_str(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
                             const char* src, const t_buf_pos len)
 {
   t_buf_pos dst_pos = ddst_pos;
@@ -477,7 +468,7 @@ void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
   {
     // Insert position cannot be greater than current string length
     fprintf(stderr, "STRING_BUFFER OutOfBounds Error: "
-                    "string_buff_str_insert(index: %lu) [strlen: %lu]",
+                    "string_buff_insert_str(index: %lu) [strlen: %lu]",
             (unsigned long)dst_pos, (unsigned long)dst->len);
 
     return;
@@ -486,23 +477,27 @@ void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
   // Check if dest buffer can handle string plus \0
   string_buff_ensure_capacity(dst, dst_pos + len);
 
-  if(dst_pos <= dst->len - 1)
+  // dst_pos could be at the end (== dst->len)
+  if(dst_pos < dst->len)
   {
     // Shift some characters up
     memmove(dst->buff + dst_pos + len,
-            dst + dst_pos,
+            dst->buff + dst_pos,
             (size_t)(dst->len - dst_pos));
   }
 
   // Insert
   memmove(dst->buff + dst_pos, src, (size_t)len);
 
-  if(dst_pos + len > dst->len)
-  {
-    // Update size
-    dst->len = dst_pos + len;
-    dst->buff[dst->len] = '\0';
-  }
+  // Update size
+  dst->len = dst_pos + len;
+  dst->buff[dst->len] = '\0';
+}
+
+void string_buff_insert_char(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                             const char c)
+{
+  string_buff_insert_str(dst, dst_pos, &c, 1);
 }
 
 
@@ -513,6 +508,11 @@ void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos ddst_pos,
 #define _func_read(name,type,func) \
 t_buf_pos name(STRING_BUFFER *sbuf, type *file, t_buf_pos len)                 \
 {                                                                              \
+  if(len == 0)                                                                 \
+  {                                                                            \
+    return 0;                                                                  \
+  }                                                                            \
+                                                                               \
   string_buff_ensure_capacity(sbuf, sbuf->len + len);                          \
                                                                                \
   if(func)                                                                     \
@@ -526,12 +526,10 @@ t_buf_pos name(STRING_BUFFER *sbuf, type *file, t_buf_pos len)                 \
 }
 
 _func_read(string_buff_gzread, gzFile,
-           gzgets(file, (char*)(sbuf->buff + sbuf->len),
-                  sbuf->size - sbuf->len) == Z_NULL)
+           gzgets(file, (char*)(sbuf->buff + sbuf->len), len+1) == Z_NULL)
 
 _func_read(string_buff_read, FILE,
-           fgets((char*)(sbuf->buff + sbuf->len),
-                 sbuf->size - sbuf->len, file) == NULL)
+           fgets((char*)(sbuf->buff + sbuf->len), len+1, file) == NULL)
 
 #define _func_readline(name,type,func) \
 t_buf_pos name(STRING_BUFFER *sbuf, type *file)                                \

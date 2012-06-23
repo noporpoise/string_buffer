@@ -136,8 +136,11 @@ void string_buff_insert(STRING_BUFFER* dest, const t_buf_pos dest_pos,
                         const STRING_BUFFER* src, const t_buf_pos src_pos,
                         const t_buf_pos len);
 
-void string_buff_str_insert(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+void string_buff_insert_str(STRING_BUFFER* dst, const t_buf_pos dst_pos,
                             const char* src, const t_buf_pos len);
+
+void string_buff_insert_char(STRING_BUFFER* dst, const t_buf_pos dst_pos,
+                             const char c);
 
 //
 // sprintf
