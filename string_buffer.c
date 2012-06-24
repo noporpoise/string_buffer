@@ -598,7 +598,7 @@ t_buf_pos string_buff_skip_line(FILE *file)
   {
     count++;
     
-    if(c == '\n' && c == '\r')
+    if(c == '\n' || c == '\r')
     {
       break;
     }
@@ -616,7 +616,7 @@ t_buf_pos string_buff_gzskip_line(gzFile *gz_file)
   {
     count++;
     
-    if(c == '\n' && c == '\r')
+    if(c == '\n' || c == '\r')
     {
       break;
     }
