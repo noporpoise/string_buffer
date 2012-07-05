@@ -95,40 +95,51 @@ void test_split()
 
 void test_add_char()
 {
-  STRING_BUFFER* sbuf = string_buff_init(100);
+  StrBuf* sbuf = strbuf_init(100);
   
-  string_buff_append_char(sbuf, 'a');
-  string_buff_append_char(sbuf, 'b');
+  strbuf_append_char(sbuf, 'a');
+  strbuf_append_char(sbuf, 'b');
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 }
 
 void test_sprintf()
 {
   printf("printf:\n");
-  STRING_BUFFER* sbuf = string_buff_init(100);
+  StrBuf* sbuf = strbuf_init(100);
   
-  string_buff_sprintf(sbuf, "hi ello");
+  strbuf_sprintf(sbuf, "hi ello");
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
   
-  string_buff_sprintf_noterm(sbuf, 0, "woot %i %s;", 12, "byebye");
+  strbuf_sprintf_noterm(sbuf, 0, "woot %i %s;", 12, "byebye");
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 
   char *a = "wooo-%s-xx";
   char *b = "hihi";
 
-  string_buff_sprintf_at(sbuf, string_buff_strlen(sbuf), a, b);
+  strbuf_sprintf_at(sbuf, strbuf_len(sbuf), a, b);
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 
-  string_buff_reset(sbuf);
-  string_buff_resize(sbuf, 10);
-  string_buff_append_str(sbuf, "asdfasdf");
+  strbuf_reset(sbuf);
+  strbuf_resize(sbuf, 10);
+  strbuf_append_str(sbuf, "asdfasdf");
 
-  string_buff_sprintf(sbuf, a, b);
+  strbuf_sprintf(sbuf, a, b);
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 }
 
 int main(int argc, char* argv[])
 {
+  if(argc != 1)
+  {
+    int i;
+    printf("Unused arguments: %s", argv[1]);
+    for(i = 2; i < argc; i++) {
+      printf(", %s", argv[i]);
+    }
+    printf("\n");
+    exit(EXIT_FAILURE);
+  }
+
   // StringBuffer functions
   test_add_char();
   test_sprintf();

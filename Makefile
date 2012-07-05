@@ -4,7 +4,7 @@ else
 	DEBUG_FLAGS=-O3
 endif
 
-CFLAGS=-Wall
+CFLAGS=-Wall -Wextra
 LIB_FLAGS=-lz
 
 all:
