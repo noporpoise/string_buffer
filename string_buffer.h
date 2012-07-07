@@ -46,7 +46,7 @@ struct StrBuf
 
 // Constructors
 StrBuf* strbuf_new();
-StrBuf* strbuf_init(const t_buf_pos size);
+StrBuf* strbuf_init(t_buf_pos size);
 StrBuf* strbuf_create(const char* str);
 
 // Destructors
@@ -74,35 +74,35 @@ inline t_buf_pos strbuf_size(const StrBuf* sbuf);
 //
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
-void strbuf_ensure_capacity(StrBuf *sbuf, const t_buf_pos len);
+void strbuf_ensure_capacity(StrBuf *sbuf, t_buf_pos len);
 
 /* More focused -- less used */
 
 // reallocs to exact memory specified - return 1 on success 0 on failure
-char strbuf_resize(StrBuf *sbuf, const t_buf_pos new_size);
+char strbuf_resize(StrBuf *sbuf, t_buf_pos new_size);
 
 // convenience function: prints error and exits with EXIT_FAILURE if it fails
-void strbuf_resize_vital(StrBuf *sbuf, const t_buf_pos new_size);
+void strbuf_resize_vital(StrBuf *sbuf, t_buf_pos new_size);
 
 // Shorten string without reallocating memory
-void strbuf_shrink(StrBuf *sbuf, const t_buf_pos new_len);
+void strbuf_shrink(StrBuf *sbuf, t_buf_pos new_len);
 
 //
 // Useful String functions
 //
 
 // get/set chars
-inline char strbuf_get_char(const StrBuf *sbuf, const t_buf_pos index);
-inline void strbuf_set_char(StrBuf *sbuf, const t_buf_pos index, const char c);
+inline char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index);
+inline void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c);
 
 // Add a character to the end of this StrBuf
-void strbuf_append_char(StrBuf* sbuf, const char txt);
+void strbuf_append_char(StrBuf* sbuf, char c);
 // Copy a StrBuf to the end of this StrBuf
 void strbuf_append_buff(StrBuf* dst, StrBuf* src);
 // Copy a character array to the end of this StrBuf
 void strbuf_append_str(StrBuf* sbuf, const char* txt);
 // Copy N characters from a character array to the end of this StrBuf
-void strbuf_append_strn(StrBuf* sbuf, const char* txt, const t_buf_pos len);
+void strbuf_append_strn(StrBuf* sbuf, const char* txt, t_buf_pos len);
 
 // Remove \r and \n characters from the end of this StrBuf
 void strbuf_chomp(StrBuf *sbuf);
@@ -115,33 +115,35 @@ void strbuf_reverse_region(StrBuf *sbuf, t_buf_pos start, t_buf_pos length);
 
 // Get a substring as a new null terminated char array
 // (remember to free the returned char* after you're done with it!)
-char* strbuf_substr(StrBuf *sbuf, const t_buf_pos start, const t_buf_pos len);
+char* strbuf_substr(StrBuf *sbuf, t_buf_pos start, t_buf_pos len);
 
 // Change to upper or lower case
 void strbuf_to_uppercase(StrBuf *sbuf);
 void strbuf_to_lowercase(StrBuf *sbuf);
 
 // Copy a string to this StrBuf, overwriting any existing characters
-void strbuf_copy(StrBuf* dst, const t_buf_pos dst_pos,
-                 const StrBuf* src, const t_buf_pos src_pos,
-                 const t_buf_pos len);
+void strbuf_copy(StrBuf* dst, t_buf_pos dst_pos,
+                 const StrBuf* src, t_buf_pos src_pos,
+                 t_buf_pos len);
 
 // Overwrite a portion of an StrBuf with a new string
 // Note: dst_pos + len can be longer the the current dst StrBuf
-void strbuf_overwrite_str(StrBuf* dst, const t_buf_pos dst_pos,
-                          const char* src, const t_buf_pos len);
+void strbuf_overwrite_str(StrBuf* dst, t_buf_pos dst_pos,
+                          const char* src, t_buf_pos len);
 
 // Insert: copy to a StrBuf, shifting any existing characters along
-void strbuf_insert(StrBuf* dst, const t_buf_pos dst_pos,
-                   const StrBuf* src, const t_buf_pos src_pos,
-                   const t_buf_pos len);
+void strbuf_insert(StrBuf* dst, t_buf_pos dst_pos,
+                   const StrBuf* src, t_buf_pos src_pos,
+                   t_buf_pos len);
 
 // Insert a string
-void strbuf_insert_str(StrBuf* dst, const t_buf_pos dst_pos,
-                       const char* src, const t_buf_pos len);
+void strbuf_insert_strn(StrBuf* dst, t_buf_pos dst_pos,
+                        const char* src, t_buf_pos len);
+
+void strbuf_insert_str(StrBuf* dst, t_buf_pos ddst_pos, const char* src);
 
 // Insert a single char
-void strbuf_insert_char(StrBuf* dst, const t_buf_pos dst_pos, const char c);
+void strbuf_insert_char(StrBuf* dst, t_buf_pos dst_pos, char c);
 
 //
 // Print to stream
@@ -153,13 +155,11 @@ int strbuf_puts(StrBuf* sbuf);
 // Print to FILE stream. Returns number of bytes printed
 int strbuf_fputs(StrBuf* sbuf, FILE* out);
 
-size_t strbuf_fwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
-                     FILE* out);
+size_t strbuf_fwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, FILE* out);
 
 int strbuf_gzputs(StrBuf* sbuf, gzFile* gzout);
 
-int strbuf_gzwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
-                   gzFile* gzout);
+int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile* gzout);
 
 //
 // sprintf
@@ -167,15 +167,13 @@ int strbuf_gzwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
 
 // sprintf to a StrBuf (adds string terminator after sprint)
 int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...);
-int strbuf_sprintf_at(StrBuf *sbuf, const t_buf_pos pos, const char* fmt, ...);
-int strbuf_vsprintf(StrBuf *sbuf, const t_buf_pos pos,
-                    const char* fmt, va_list argptr);
+int strbuf_sprintf_at(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...);
+int strbuf_vsprintf(StrBuf *sbuf, t_buf_pos pos, const char* fmt, va_list argptr);
 
 // sprintf without terminating character
 // Does not prematurely end the string if you sprintf within the string
 // (terminates string if sprintf to the end)
-int strbuf_sprintf_noterm(StrBuf *sbuf, const t_buf_pos pos,
-                          const char* fmt, ...);
+int strbuf_sprintf_noterm(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...);
 
 //
 // Reading files
@@ -205,7 +203,7 @@ char string_is_all_whitespace(const char* s);
 char* string_next_nonwhitespace(const char* s);
 char* string_trim(char* str);
 size_t string_chomp(char* str);
-size_t string_count_char(const char* str, const int c);
+size_t string_count_char(const char* str, int c);
 long string_split(const char* split, const char* txt, char*** result);
 
 #endif

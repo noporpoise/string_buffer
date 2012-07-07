@@ -46,7 +46,7 @@ StrBuf* strbuf_new()
   return strbuf_init(256);
 }
 
-StrBuf* strbuf_init(const t_buf_pos size)
+StrBuf* strbuf_init(t_buf_pos size)
 {
   t_buf_pos new_size = size < MIN_SIZE ? MIN_SIZE : size;
 
@@ -144,7 +144,7 @@ inline t_buf_pos strbuf_size(const StrBuf* sbuf)
 
 // Get / set characters
 
-inline char strbuf_get_char(const StrBuf *sbuf, const t_buf_pos index)
+inline char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index)
 {
   // Bounds checking
   if(index >= sbuf->len)
@@ -159,7 +159,7 @@ inline char strbuf_get_char(const StrBuf *sbuf, const t_buf_pos index)
   return sbuf->buff[index];
 }
 
-inline void strbuf_set_char(StrBuf *sbuf, const t_buf_pos index, const char c)
+inline void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c)
 {
   // Bounds checking
   if(index > sbuf->len)
@@ -187,7 +187,7 @@ inline void strbuf_set_char(StrBuf *sbuf, const t_buf_pos index, const char c)
 /*  Resize Buffer Functions   */
 /******************************/
 
-char strbuf_resize(StrBuf *sbuf, const t_buf_pos new_size)
+char strbuf_resize(StrBuf *sbuf, t_buf_pos new_size)
 {
   char *new_buff = realloc(sbuf->buff, new_size);
 
@@ -209,7 +209,7 @@ char strbuf_resize(StrBuf *sbuf, const t_buf_pos new_size)
   return 1;
 }
 
-void strbuf_resize_vital(StrBuf *sbuf, const t_buf_pos new_size)
+void strbuf_resize_vital(StrBuf *sbuf, t_buf_pos new_size)
 {
   if(!strbuf_resize(sbuf, new_size))
   {
@@ -224,7 +224,7 @@ void strbuf_resize_vital(StrBuf *sbuf, const t_buf_pos new_size)
 }
 
 // Ensure capacity for len characters plus '\0' character
-void strbuf_ensure_capacity(StrBuf *sbuf, const t_buf_pos len)
+void strbuf_ensure_capacity(StrBuf *sbuf, t_buf_pos len)
 {
   if(sbuf->size > len+1)
   {
@@ -242,7 +242,7 @@ void strbuf_ensure_capacity(StrBuf *sbuf, const t_buf_pos len)
   strbuf_resize_vital(sbuf, new_size);
 }
 
-void strbuf_shrink(StrBuf *sbuf, const t_buf_pos new_len)
+void strbuf_shrink(StrBuf *sbuf, t_buf_pos new_len)
 {
   sbuf->len = new_len;
   sbuf->buff[new_len] = '\0';
@@ -258,8 +258,7 @@ void strbuf_append_str(StrBuf* sbuf, const char* txt)
   strbuf_append_strn(sbuf, txt, str_len);
 }
 
-void strbuf_append_strn(StrBuf* sbuf, const char* txt,
-                             const t_buf_pos len)
+void strbuf_append_strn(StrBuf* sbuf, const char* txt, t_buf_pos len)
 {
   // plus 1 for '\0'
   strbuf_ensure_capacity(sbuf, sbuf->len + len);
@@ -270,7 +269,7 @@ void strbuf_append_strn(StrBuf* sbuf, const char* txt,
   sbuf->buff[sbuf->len] = '\0';
 }
 
-void strbuf_append_char(StrBuf* sbuf, const char c)
+void strbuf_append_char(StrBuf* sbuf, char c)
 {
   // Adding one character
   strbuf_ensure_capacity(sbuf, sbuf->len + 1);
@@ -346,7 +345,7 @@ void strbuf_reverse_region(StrBuf *sbuf, t_buf_pos start, t_buf_pos length)
   }
 }
 
-char* strbuf_substr(StrBuf *sbuf, const t_buf_pos start, const t_buf_pos len)
+char* strbuf_substr(StrBuf *sbuf, t_buf_pos start, t_buf_pos len)
 {
   // Bounds checking
   if(start + len >= sbuf->len)
@@ -388,9 +387,9 @@ void strbuf_to_lowercase(StrBuf *sbuf)
 }
 
 // Get
-void strbuf_copy(StrBuf* dst, const t_buf_pos dst_pos,
-                 const StrBuf* src, const t_buf_pos src_pos,
-                 const t_buf_pos len)
+void strbuf_copy(StrBuf* dst, t_buf_pos dst_pos,
+                 const StrBuf* src, t_buf_pos src_pos,
+                 t_buf_pos len)
 {
   if(dst_pos > dst->len)
   {
@@ -412,8 +411,8 @@ void strbuf_copy(StrBuf* dst, const t_buf_pos dst_pos,
   strbuf_overwrite_str(dst, dst_pos, src->buff+src_pos, len);
 }
 
-void strbuf_overwrite_str(StrBuf* dst, const t_buf_pos ddst_pos,
-                          const char* src, const t_buf_pos len)
+void strbuf_overwrite_str(StrBuf* dst, t_buf_pos ddst_pos,
+                          const char* src, t_buf_pos len)
 {
   t_buf_pos dst_pos = ddst_pos;
 
@@ -445,11 +444,9 @@ void strbuf_overwrite_str(StrBuf* dst, const t_buf_pos ddst_pos,
   }
 }
 
-void strbuf_insert_str(StrBuf* dst, const t_buf_pos ddst_pos,
-                       const char* src, const t_buf_pos len)
+void strbuf_insert_strn(StrBuf* dst, t_buf_pos dst_pos,
+                        const char* src, t_buf_pos len)
 {
-  t_buf_pos dst_pos = ddst_pos;
-
   if(src == NULL || len == 0)
   {
     return;
@@ -458,7 +455,7 @@ void strbuf_insert_str(StrBuf* dst, const t_buf_pos ddst_pos,
   {
     // Insert position cannot be greater than current string length
     fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_insert_str(index: %lu) [strlen: %lu]",
+                    "strbuf_insert_strn(index: %lu) [strlen: %lu]",
             (unsigned long)dst_pos, (unsigned long)dst->len);
 
     return;
@@ -484,16 +481,21 @@ void strbuf_insert_str(StrBuf* dst, const t_buf_pos ddst_pos,
   dst->buff[dst->len] = '\0';
 }
 
-void strbuf_insert(StrBuf* dst, const t_buf_pos dst_pos,
-                   const StrBuf* src, const t_buf_pos src_pos,
-                   const t_buf_pos len)
+void strbuf_insert_str(StrBuf* dst, t_buf_pos dst_pos, const char* src)
 {
-  strbuf_insert_str(dst, dst_pos, src->buff+src_pos, len);
+  strbuf_insert_strn(dst, dst_pos, src, strlen(src));
 }
 
-void strbuf_insert_char(StrBuf* dst, const t_buf_pos dst_pos, const char c)
+void strbuf_insert(StrBuf* dst, t_buf_pos dst_pos,
+                   const StrBuf* src, t_buf_pos src_pos,
+                   t_buf_pos len)
 {
-  strbuf_insert_str(dst, dst_pos, &c, 1);
+  strbuf_insert_strn(dst, dst_pos, src->buff+src_pos, len);
+}
+
+void strbuf_insert_char(StrBuf* dst, t_buf_pos dst_pos, char c)
+{
+  strbuf_insert_strn(dst, dst_pos, &c, 1);
 }
 
 /**********************/
@@ -511,8 +513,7 @@ int strbuf_fputs(StrBuf* sbuf, FILE* out)
   return fputs(sbuf->buff, out);
 }
 
-size_t strbuf_fwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
-                     FILE* out)
+size_t strbuf_fwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, FILE* out)
 {
   return fwrite(sbuf->buff + pos, sizeof(char), len, out);
 }
@@ -523,8 +524,7 @@ int strbuf_gzputs(StrBuf* sbuf, gzFile* gzout)
   return gzputs(gzout, sbuf->buff);
 }
 
-int strbuf_gzwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
-                   gzFile* gzout)
+int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile* gzout)
 {
   return gzwrite(gzout, sbuf->buff + pos, len);
 }
@@ -533,8 +533,7 @@ int strbuf_gzwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
 /*         sprintf        */
 /**************************/
 
-int strbuf_vsprintf(StrBuf *sbuf, const t_buf_pos pos,
-                    const char* fmt, va_list argptr)
+int strbuf_vsprintf(StrBuf *sbuf, t_buf_pos pos, const char* fmt, va_list argptr)
 {
   // Bounds check
   if(pos > sbuf->len)
@@ -600,7 +599,7 @@ int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...)
   return num_chars;
 }
 
-int strbuf_sprintf_at(StrBuf *sbuf, const t_buf_pos pos, const char* fmt, ...)
+int strbuf_sprintf_at(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...)
 {
   // Bounds check
   if(pos > sbuf->len)
@@ -622,8 +621,7 @@ int strbuf_sprintf_at(StrBuf *sbuf, const t_buf_pos pos, const char* fmt, ...)
 
 // Does not prematurely end the string if you sprintf within the string
 // (vs at the end)
-int strbuf_sprintf_noterm(StrBuf *sbuf, const t_buf_pos pos,
-                          const char* fmt, ...)
+int strbuf_sprintf_noterm(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...)
 {
   // Bounds check
   if(pos > sbuf->len)
@@ -864,7 +862,7 @@ size_t string_chomp(char* str)
 }
 
 // Returns count
-size_t string_count_char(const char* str, const int c)
+size_t string_count_char(const char* str, int c)
 {
   size_t count = 0;
   const char *tmp = str;
