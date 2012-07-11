@@ -22,7 +22,7 @@ and include in your source code:
 
 include "string_buffer.h"
 
-// To access the char* buffer (of some STRING_BUFFER* buffer), use:
+// To access the char* buffer (of some StrBuf* buffer), use:
 // (but it's best not to do this)
 char* str = buffer->buff;
 

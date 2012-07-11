@@ -462,7 +462,7 @@ void strbuf_insert_strn(StrBuf* dst, t_buf_pos dst_pos,
   }
 
   // Check if dest buffer can handle string plus \0
-  strbuf_ensure_capacity(dst, dst_pos + len);
+  strbuf_ensure_capacity(dst, dst->len + len);
 
   // dst_pos could be at the end (== dst->len)
   if(dst_pos < dst->len)
@@ -477,7 +477,7 @@ void strbuf_insert_strn(StrBuf* dst, t_buf_pos dst_pos,
   memmove(dst->buff + dst_pos, src, (size_t)len);
 
   // Update size
-  dst->len = dst_pos + len;
+  dst->len = dst->len + len;
   dst->buff[dst->len] = '\0';
 }
 
