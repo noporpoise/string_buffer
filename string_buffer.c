@@ -28,8 +28,6 @@
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN_SIZE 10
 
-#include <stdio.h>
-#include <stdarg.h> // required for va_list
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h> // toupper() and tolower()

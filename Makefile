@@ -11,7 +11,7 @@ endif
 all:
 	gcc $(CFLAGS) -c string_buffer.c -o string_buffer.o
 	ar -csru libstrbuf.a string_buffer.o
-	gcc $(CFLAGS) $(LIBFLAGS) strbuf_test.c -o strbuf_test
+	gcc $(CFLAGS) strbuf_test.c -o strbuf_test $(LIBFLAGS)
 
 clean:
 	if test -e string_buffer.o; then rm string_buffer.o; fi

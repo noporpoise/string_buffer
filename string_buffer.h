@@ -27,8 +27,9 @@
 #ifndef STRING_BUFFER_FILE_SEEN
 #define STRING_BUFFER_FILE_SEEN
 
+#include <stdio.h> // needed for FILE
 #include <zlib.h> // needed for gzFile
-#include <stdarg.h> // required for va_list
+#include <stdarg.h> // needed for va_list
 
 typedef unsigned long t_buf_pos;
 typedef struct StrBuf StrBuf;
