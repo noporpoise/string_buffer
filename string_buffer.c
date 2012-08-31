@@ -142,7 +142,7 @@ t_buf_pos strbuf_size(const StrBuf* sbuf)
 
 // Get / set characters
 
-inline char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index)
+char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index)
 {
   // Bounds checking
   if(index >= sbuf->len)
@@ -157,7 +157,7 @@ inline char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index)
   return sbuf->buff[index];
 }
 
-inline void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c)
+void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c)
 {
   // Bounds checking
   if(index > sbuf->len)

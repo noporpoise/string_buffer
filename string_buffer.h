@@ -93,8 +93,8 @@ void strbuf_shrink(StrBuf *sbuf, t_buf_pos new_len);
 //
 
 // get/set chars
-inline char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index);
-inline void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c);
+char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index);
+void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c);
 
 // Add a character to the end of this StrBuf
 void strbuf_append_char(StrBuf* sbuf, char c);
