@@ -11,7 +11,7 @@
 To build the test code:
 
 $ make
-$ string_buffer_test
+$ ./strbuf_test
 
 == How to Use ==
 
