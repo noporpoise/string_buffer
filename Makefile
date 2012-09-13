@@ -1,9 +1,9 @@
-ifndef $(CC)
+ifndef CC
   CC = gcc
 endif
 
 CFLAGS := -Wall -Wextra
-LIBFLAGS := -L. -lz -lstrbuf
+LIBFLAGS := -L. -lstrbuf -lz
 
 ifdef DEBUG
 	CFLAGS := $(CFLAGS) -DDEBUG=1 --debug
