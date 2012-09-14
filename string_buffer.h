@@ -167,14 +167,20 @@ int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile* gzout);
 //
 
 // sprintf to a StrBuf (adds string terminator after sprint)
-int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...);
-int strbuf_sprintf_at(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...);
-int strbuf_vsprintf(StrBuf *sbuf, t_buf_pos pos, const char* fmt, va_list argptr);
+int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...)
+  __attribute__ ((format(printf, 2, 3)));
+
+int strbuf_sprintf_at(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...)
+  __attribute__ ((format(printf, 3, 4)));
+
+int strbuf_vsprintf(StrBuf *sbuf, t_buf_pos pos, const char* fmt, va_list argptr)
+  __attribute__ ((format(printf, 3, 0)));
 
 // sprintf without terminating character
 // Does not prematurely end the string if you sprintf within the string
 // (terminates string if sprintf to the end)
-int strbuf_sprintf_noterm(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...);
+int strbuf_sprintf_noterm(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...)
+  __attribute__ ((format(printf, 3, 4)));
 
 //
 // Reading files
