@@ -155,11 +155,9 @@ int strbuf_puts(StrBuf* sbuf);
 
 // Print to FILE stream. Returns number of bytes printed
 int strbuf_fputs(StrBuf* sbuf, FILE* out);
-
-size_t strbuf_fwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, FILE* out);
-
 int strbuf_gzputs(StrBuf* sbuf, gzFile* gzout);
 
+size_t strbuf_fwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, FILE* out);
 int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile* gzout);
 
 //
@@ -201,6 +199,21 @@ t_buf_pos strbuf_gzskip_line(gzFile *gz_file);
 // Read a line but no more than len bytes
 t_buf_pos strbuf_read(StrBuf *sbuf, FILE *file, t_buf_pos len);
 t_buf_pos strbuf_gzread(StrBuf *sbuf, gzFile *file, t_buf_pos len);
+
+//
+// String functions
+//
+
+// Trim whitespace characters from the start and end of a string
+void strbuf_trim(StrBuf *sbuf);
+
+// Trim the characters listed in `list` from the left of `sbuf`
+// `list` is a null-terminated string of characters
+void strbuf_ltrim(StrBuf *sbuf, char* list);
+
+// Trim the characters listed in `list` from the right of `sbuf`
+// `list` is a null-terminated string of characters
+void strbuf_rtrim(StrBuf *sbuf, char* list);
 
 /**************************/
 /* Other String functions */

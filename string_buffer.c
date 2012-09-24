@@ -787,6 +787,68 @@ t_buf_pos strbuf_gzskip_line(gzFile *gz_file)
   return count;
 }
 
+//
+// String functions
+//
+
+// Trim whitespace characters from the start and end of a string
+void strbuf_trim(StrBuf *sbuf)
+{
+  if(sbuf->len == 0)
+    return;
+
+  // Trim end first
+  while(sbuf->len > 0 && isspace(sbuf->buff[sbuf->len-1]))
+    sbuf->len--;
+
+  sbuf->buff[sbuf->len] = '\0';
+
+  if(sbuf->len == 0)
+    return;
+
+  t_buf_pos start = 0;
+
+  while(start < sbuf->len && isspace(sbuf->buff[start]))
+    start++;
+
+  if(start != 0)
+  {
+    sbuf->len -= start;
+    memmove(sbuf->buff, sbuf->buff+start, sbuf->len);
+    sbuf->buff[sbuf->len] = '\0';
+  }
+}
+
+// Trim the characters listed in `list` from the left of `sbuf`
+// `list` is a null-terminated string of characters
+void strbuf_ltrim(StrBuf *sbuf, char* list)
+{
+  t_buf_pos start = 0;
+
+  while(start < sbuf->len && strchr(list, sbuf->buff[start]) != NULL)
+    start++;
+
+  if(start != 0)
+  {
+    sbuf->len -= start;
+    memmove(sbuf->buff, sbuf->buff+start, sbuf->len);
+    sbuf->buff[sbuf->len] = '\0';
+  }
+}
+
+// Trim the characters listed in `list` from the right of `sbuf`
+// `list` is a null-terminated string of characters
+void strbuf_rtrim(StrBuf *sbuf, char* list)
+{
+  if(sbuf->len == 0)
+    return;
+
+  while(sbuf->len > 0 && strchr(list, sbuf->buff[sbuf->len-1]) != NULL)
+    sbuf->len--;
+
+  sbuf->buff[sbuf->len] = '\0';
+}
+
 /**************************/
 /* Other String Functions */
 /**************************/
@@ -821,6 +883,7 @@ char* string_next_nonwhitespace(const char* s)
   return NULL;
 }
 
+// Strip whitespace the the start and end of a string.  
 // Strips whitepace from the end of the string with \0, and returns pointer to
 // first non-whitespace character
 char* string_trim(char* str)

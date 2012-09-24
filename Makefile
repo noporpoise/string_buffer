@@ -17,8 +17,4 @@ all:
 	$(CC) $(CFLAGS) strbuf_test.c -o strbuf_test $(LIBFLAGS)
 
 clean:
-	if test -e string_buffer.o; then rm string_buffer.o; fi
-	if test -e libstrbuf.a; then rm libstrbuf.a; fi
-	if test -e strbuf_test; then rm strbuf_test; fi
-	for file in $(wildcard *.dSYM); do rm -r $$file; done
-	for file in $(wildcard *.greg); do rm $$file; done
+	rm -rf string_buffer.o libstrbuf.a strbuf_test string_buffer.dSYM string_buffer.greg
