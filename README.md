@@ -3,7 +3,9 @@
  library code for handling strings and reading from files
 
  project: string_buffer
+
  url: https://github.com/noporpoise/StringBuffer
+ 
  author: Isaac Turner <turner.isaac@gmail.com>
 
 About
@@ -16,8 +18,8 @@ Features:
 - reverse region, convert to upper/lower case
 - sprintf into string buffer
 - read a line at a time from a file
-- gzip file reading
 - write to a file
+- gzip file support
 
 
 To build the test code:
@@ -69,18 +71,17 @@ Example Code
 
 
 String buffers can still be used as input to standard str functions by accessing
-the char* in the StrBuf struct.
+the char* in the StrBuf struct. e.g.:
 
+* Get the position of the first 'a' in a StrBuf
 
-  // Get the position of the first 'a' in a StrBuf
-  char* ptr = strchr(strbuf->buff, 'a');
-  int pos = (ptr == NULL ? -1 : ptr - strbuf->buff);
+    char* ptr = strchr(strbuf->buff, 'a');
+    int pos = (ptr == NULL ? -1 : ptr - strbuf->buff);
 
-  // Test if the StrBuf contains 'hello' from index 12
-  if(strncasecmp(strbuf->buff+12, "hello", 5) == 0)
-    puts("world!\n");
+* Test if the StrBuf contains 'hello' from index 12
 
-  ...
+    if(strncasecmp(strbuf->buff+12, "hello", 5) == 0)
+      puts("world!\n");
 
 
 Functions
@@ -312,7 +313,7 @@ These work on `char*` not `StrBuf`, but they're here because they're useful.
 
 
 License
--------
+=======
 
  Copyright (c) 2011, Isaac Turner
  All rights reserved.
@@ -334,7 +335,7 @@ License
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Development
------------
+===========
 
 Short term goals: none -- please suggest some
 
