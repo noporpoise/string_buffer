@@ -96,6 +96,9 @@ void strbuf_shrink(StrBuf *sbuf, t_buf_pos new_len);
 char strbuf_get_char(const StrBuf *sbuf, t_buf_pos index);
 void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c);
 
+// Set string buffer to contain a given string
+void strbuf_set(StrBuf *sbuf, const char *str);
+
 // Add a character to the end of this StrBuf
 void strbuf_append_char(StrBuf* sbuf, char c);
 // Copy a StrBuf to the end of this StrBuf

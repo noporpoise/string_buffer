@@ -181,6 +181,22 @@ void strbuf_set_char(StrBuf *sbuf, t_buf_pos index, char c)
   }
 }
 
+// Set string buffer to contain a given string
+// The string can be a string within the given string buffer
+void strbuf_set(StrBuf *sbuf, const char *str)
+{
+  size_t len = strlen(str);
+  strbuf_ensure_capacity(sbuf, len+1);
+
+  // Manual copy instead of with strcpy/strncpy to allow overlapping strings
+  size_t i;
+  for(i = 0; i < len; i++)
+    sbuf->buff[i] = str[i];
+
+  sbuf->buff[len] = '\0';
+  sbuf->len = len;
+}
+
 /******************************/
 /*  Resize Buffer Functions   */
 /******************************/

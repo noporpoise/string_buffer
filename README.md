@@ -161,6 +161,11 @@ get/set chars
     inline char strbuf_get_char(const StrBuf *sbuf, const t_buf_pos index);
     inline void strbuf_set_char(StrBuf *sbuf, const t_buf_pos index, const char c);
 
+Set string buffer to contain a given string
+The string can be a string within the given string buffer
+
+    void strbuf_set(StrBuf *sbuf, const char *str)
+
 Add a character to the end of this StrBuf
 
     void strbuf_append_char(StrBuf* sbuf, const char txt);
