@@ -188,10 +188,8 @@ void strbuf_set(StrBuf *sbuf, const char *str)
   size_t len = strlen(str);
   strbuf_ensure_capacity(sbuf, len+1);
 
-  // Manual copy instead of with strcpy/strncpy to allow overlapping strings
-  size_t i;
-  for(i = 0; i < len; i++)
-    sbuf->buff[i] = str[i];
+  // Use memmove to allow overlapping strings
+  memmove(sbuf->buff, str, sizeof(char) * len);
 
   sbuf->buff[len] = '\0';
   sbuf->len = len;
