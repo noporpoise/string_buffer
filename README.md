@@ -1,12 +1,9 @@
- 
- C String Buffer
- library code for handling strings and reading from files
-
- project: string_buffer
-
- url: https://github.com/noporpoise/StringBuffer
- 
- author: Isaac Turner <turner.isaac@gmail.com>
+C String Buffer
+===============
+Library code for handling strings and reading from files  
+project: string_buffer  
+url: https://github.com/noporpoise/StringBuffer  
+author: Isaac Turner <turner.isaac@gmail.com>  
 
 About
 =====
@@ -179,9 +176,10 @@ Copy N characters from a character array to the end of this StrBuf
 
     void strbuf_append_strn(StrBuf* sbuf, const char* txt, const t_buf_pos len);
 
-Remove \r and \n characters from the end of this StrBuf
+Remove \r and \n characters from the end of this StrBuf.
+Returns the number of characters removed
 
-    void strbuf_chomp(StrBuf *sbuf);
+    t_buf_pos strbuf_chomp(StrBuf *sbuf);
 
 Reverse a string
 

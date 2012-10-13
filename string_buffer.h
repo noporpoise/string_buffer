@@ -109,7 +109,8 @@ void strbuf_append_str(StrBuf* sbuf, const char* txt);
 void strbuf_append_strn(StrBuf* sbuf, const char* txt, t_buf_pos len);
 
 // Remove \r and \n characters from the end of this StrBuf
-void strbuf_chomp(StrBuf *sbuf);
+// Returns the number of characters removed
+t_buf_pos strbuf_chomp(StrBuf *sbuf);
 
 // Reverse a string
 void strbuf_reverse(StrBuf *sbuf);

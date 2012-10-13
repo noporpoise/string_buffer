@@ -301,8 +301,12 @@ void strbuf_append_buff(StrBuf* dst, StrBuf* src)
   dst->buff[dst->len] = '\0';
 }
 
-void strbuf_chomp(StrBuf *sbuf)
+// Remove \r and \n characters from the end of this StrBuf
+// Returns the number of characters removed
+t_buf_pos strbuf_chomp(StrBuf *sbuf)
 {
+  t_buf_pos original_length = sbuf->len;
+
   while(sbuf->len >= 1)
   {
     char last_char = sbuf->buff[sbuf->len-1];
@@ -316,6 +320,8 @@ void strbuf_chomp(StrBuf *sbuf)
       break;
     }
   }
+
+  return (original_length - sbuf->len);
 }
 
 // Reverse a string
