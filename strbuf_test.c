@@ -70,6 +70,7 @@ void _test_split(char* split, char* txt)
   if(count > 0)
   {
     printf("'%s'", results[0]);
+    free(results[0]);
   
     int i;
     for(i = 1; i < count; i++)
@@ -77,6 +78,7 @@ void _test_split(char* split, char* txt)
       printf(", '%s'", results[i]);
       free(results[i]);
     }
+
     free(results);
   }
 
