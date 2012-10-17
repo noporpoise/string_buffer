@@ -39,6 +39,7 @@ void _test_trim(const char* str)
   char* new_str = string_trim(str_cpy);
 
   printf("trim('%s'): '%s'\n", str, new_str);
+  free(str_cpy);
 }
 
 void test_trim()
