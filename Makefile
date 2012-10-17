@@ -11,7 +11,7 @@ else
 	CFLAGS := $(CFLAGS) -O3
 endif
 
-all:
+all: clean
 	$(CC) $(CFLAGS) -c string_buffer.c -o string_buffer.o
 	ar -csru libstrbuf.a string_buffer.o
 	$(CC) $(CFLAGS) strbuf_test.c -o strbuf_test $(LIBFLAGS)
