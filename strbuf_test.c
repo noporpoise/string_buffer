@@ -102,6 +102,7 @@ void test_add_char()
   strbuf_append_char(sbuf, 'a');
   strbuf_append_char(sbuf, 'b');
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
+  strbuf_free(sbuf);
 }
 
 void test_sprintf()
@@ -127,6 +128,7 @@ void test_sprintf()
 
   strbuf_sprintf(sbuf, a, b);
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
+  strbuf_free(sbuf);
 }
 
 int main(int argc, char* argv[])
