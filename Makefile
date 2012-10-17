@@ -6,7 +6,7 @@ CFLAGS := -Wall -Wextra
 LIBFLAGS := -L. -lstrbuf -lz
 
 ifdef DEBUG
-	CFLAGS := $(CFLAGS) -DDEBUG=1 --debug
+	CFLAGS := $(CFLAGS) -DDEBUG=1 --debug -g -ggdb
 else
 	CFLAGS := $(CFLAGS) -O3
 endif
