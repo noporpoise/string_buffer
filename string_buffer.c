@@ -26,7 +26,7 @@
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
-#define MIN_SIZE 10
+#define MIN_SIZE 16
 
 #include <stdlib.h>
 #include <string.h>
@@ -129,15 +129,20 @@ char* strbuf_as_str(const StrBuf* sbuf)
 }
 
 // Get string length
-t_buf_pos strbuf_len(const StrBuf* sbuf)
+t_buf_pos strbuf_len(const StrBuf *sbuf)
 {
   return sbuf->len;
 }
 
 // Get buffer length
-t_buf_pos strbuf_size(const StrBuf* sbuf)
+t_buf_pos strbuf_size(const StrBuf *sbuf)
 {
   return sbuf->size;
+}
+
+void strbuf_update_len(StrBuf *sbuf)
+{
+  sbuf->len = strlen(sbuf->buff);
 }
 
 // Get / set characters

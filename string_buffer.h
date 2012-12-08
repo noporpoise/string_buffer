@@ -67,8 +67,12 @@ void strbuf_reset(StrBuf* sbuf);
 
 // Get number of characters in buffer
 t_buf_pos strbuf_len(const StrBuf* sbuf);
+
 // Get current capacity
 t_buf_pos strbuf_size(const StrBuf* sbuf);
+
+// If you alter the buffer, call strbuf_update_len to correct the struct
+void strbuf_update_len(StrBuf * sbuf);
 
 //
 // Resizing
