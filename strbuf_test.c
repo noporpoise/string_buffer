@@ -133,6 +133,20 @@ void test_sprintf()
   strbuf_free(sbuf);
 }
 
+void test_sscanf()
+{
+  StrBuf *sbuf = strbuf_new();
+  char *input = "I'm sorry Dave I can't do that";
+  
+  strbuf_ensure_capacity(sbuf, strlen(input));
+  sscanf(input, "I'm sorry %s I can't do that", sbuf->buff);
+  strbuf_update_len(sbuf);
+
+  printf("Name: '%s'\n", sbuf->buff);
+
+  strbuf_free(sbuf);
+}
+
 int main(int argc, char* argv[])
 {
   if(argc != 1)
@@ -145,6 +159,8 @@ int main(int argc, char* argv[])
     printf("\n");
     exit(EXIT_FAILURE);
   }
+
+  test_sscanf();
 
   // StringBuffer functions
   test_add_char();

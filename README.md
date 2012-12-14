@@ -302,6 +302,24 @@ Trim the characters listed in `list` from the right of `sbuf`.
 
     void strbuf_rtrim(StrBuf *sbuf, char* list)
 
+Use with sscanf
+---------------
+
+To read strings into a string buffer using `sscanf`, first you must ensure the
+buffer is big enough, and afterwards you must ensure the length is stored
+correctly.
+
+    StrBuf *sbuf = strbuf_new();
+    char *input = "I'm sorry Dave I can't do that";
+    
+    strbuf_ensure_capacity(sbuf, strlen(input));
+    sscanf(input, "I'm sorry %s I can't do that", sbuf->buff);
+    strbuf_update_len(sbuf);
+
+    printf("Name: '%s'\n", sbuf->buff);
+
+    strbuf_free(sbuf);
+
 Other string functions
 ----------------------
 
