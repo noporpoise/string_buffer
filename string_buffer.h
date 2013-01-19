@@ -163,10 +163,10 @@ int strbuf_puts(StrBuf* sbuf);
 
 // Print to FILE stream. Returns number of bytes printed
 int strbuf_fputs(StrBuf* sbuf, FILE* out);
-int strbuf_gzputs(StrBuf* sbuf, gzFile* gzout);
+int strbuf_gzputs(StrBuf* sbuf, gzFile gzout);
 
 size_t strbuf_fwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, FILE* out);
-int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile* gzout);
+int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile gzout);
 
 //
 // sprintf
@@ -197,16 +197,16 @@ t_buf_pos strbuf_reset_readline(StrBuf *sbuf, FILE *file);
 t_buf_pos strbuf_readline(StrBuf *sbuf, FILE *gz_file);
 
 // Reading a gzFile
-t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile *gz_file);
-t_buf_pos strbuf_gzreadline(StrBuf *sbuf, gzFile *gz_file);
+t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file);
+t_buf_pos strbuf_gzreadline(StrBuf *sbuf, gzFile gz_file);
 
 // Skip a line and return how many characters were skipped
 t_buf_pos strbuf_skip_line(FILE *file);
-t_buf_pos strbuf_gzskip_line(gzFile *gz_file);
+t_buf_pos strbuf_gzskip_line(gzFile gz_file);
 
 // Read a line but no more than len bytes
 t_buf_pos strbuf_read(StrBuf *sbuf, FILE *file, t_buf_pos len);
-t_buf_pos strbuf_gzread(StrBuf *sbuf, gzFile *file, t_buf_pos len);
+t_buf_pos strbuf_gzread(StrBuf *sbuf, gzFile gz_file, t_buf_pos len);
 
 //
 // String functions

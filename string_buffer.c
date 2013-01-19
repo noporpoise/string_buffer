@@ -542,12 +542,12 @@ size_t strbuf_fwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, FILE* out)
 }
 
 // gz versions
-int strbuf_gzputs(StrBuf* sbuf, gzFile* gzout)
+int strbuf_gzputs(StrBuf* sbuf, gzFile gzout)
 {
   return gzputs(gzout, sbuf->buff);
 }
 
-int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile* gzout)
+int strbuf_gzwrite(StrBuf* sbuf, t_buf_pos pos, t_buf_pos len, gzFile gzout)
 {
   return gzwrite(gzout, sbuf->buff + pos, (unsigned)len);
 }
@@ -693,7 +693,7 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...)
 /*****************/
 
 #define _func_read(name,type,func) \
-t_buf_pos name(StrBuf *sbuf, type *file, t_buf_pos len)                        \
+t_buf_pos name(StrBuf *sbuf, type file, t_buf_pos len)                         \
 {                                                                              \
   if(len == 0)                                                                 \
   {                                                                            \
@@ -715,11 +715,11 @@ t_buf_pos name(StrBuf *sbuf, type *file, t_buf_pos len)                        \
 _func_read(strbuf_gzread, gzFile,
            gzgets(file, (char*)(sbuf->buff + sbuf->len), (unsigned)(len+1)) == Z_NULL)
 
-_func_read(strbuf_read, FILE,
+_func_read(strbuf_read, FILE*,
            fgets((char*)(sbuf->buff + sbuf->len), (unsigned)(len+1), file) == NULL)
 
 #define _func_readline(name,type,func) \
-t_buf_pos name(StrBuf *sbuf, type *file)                                       \
+t_buf_pos name(StrBuf *sbuf, type file)                                        \
 {                                                                              \
   t_buf_pos init_str_len = sbuf->len;                                          \
   strbuf_ensure_capacity(sbuf, sbuf->len+1);                                   \
@@ -750,7 +750,7 @@ _func_readline(strbuf_gzreadline, gzFile,
 // read FILE
 // returns number of characters read
 // or 0 if EOF
-_func_readline(strbuf_readline, FILE,
+_func_readline(strbuf_readline, FILE*,
                fgets((char*)(sbuf->buff + sbuf->len),
                      (int)(sbuf->size - sbuf->len), file) != NULL)
 
@@ -767,7 +767,7 @@ t_buf_pos strbuf_reset_readline(StrBuf *sbuf, FILE *file)
 // read gzFile
 // returns number of characters read
 // or 0 if EOF
-t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile *gz_file)
+t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file)
 {
   strbuf_reset(sbuf);
   return strbuf_gzreadline(sbuf, gz_file);
@@ -794,7 +794,7 @@ t_buf_pos strbuf_skip_line(FILE *file)
   return count;
 }
 
-t_buf_pos strbuf_gzskip_line(gzFile *gz_file)
+t_buf_pos strbuf_gzskip_line(gzFile gz_file)
 {
   char c;
   t_buf_pos count = 0;
