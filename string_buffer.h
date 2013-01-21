@@ -194,7 +194,7 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, t_buf_pos pos, const char* fmt, ...)
 
 // Reading a FILE
 t_buf_pos strbuf_reset_readline(StrBuf *sbuf, FILE *file);
-t_buf_pos strbuf_readline(StrBuf *sbuf, FILE *gz_file);
+t_buf_pos strbuf_readline(StrBuf *sbuf, FILE *file);
 
 // Reading a gzFile
 t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file);

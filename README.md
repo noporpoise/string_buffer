@@ -42,7 +42,7 @@ Example Code
 
     // Read from a file:
 
-    gzFile* fgz = gzopen("path/here.txt.gz")
+    gzFile fgz = gzopen("path/here.txt.gz")
 
     while(strbuf_gzreadline(myBuff, fgz))
     {
@@ -70,12 +70,12 @@ Example Code
 String buffers can still be used as input to standard str functions by accessing
 the char* in the StrBuf struct. e.g.:
 
-* Get the position of the first 'a' in a StrBuf
+Get the position of the first 'a' in a StrBuf
 
     char* ptr = strchr(strbuf->buff, 'a')
     int pos = (ptr == NULL ? -1 : ptr - strbuf->buff)
 
-* Test if the StrBuf contains 'hello' from index 12
+Test if the StrBuf contains 'hello' from index 12
 
     if(strncasecmp(strbuf->buff+12, "hello", 5) == 0)
       puts("world!\n")
@@ -240,10 +240,10 @@ Print to FILE stream. Returns number of bytes printed
     size_t strbuf_fwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
                          FILE* out)
 
-    int strbuf_gzputs(StrBuf* sbuf, gzFile* gzout)
+    int strbuf_gzputs(StrBuf* sbuf, gzFile gzout)
 
     int strbuf_gzwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
-                       gzFile* gzout)
+                       gzFile gzout)
 
 Formatted strings (sprintf)
 ---------------------------
@@ -272,18 +272,18 @@ Reading a FILE
 
 Reading a gzFile
 
-    t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile *gz_file)
-    t_buf_pos strbuf_gzreadline(StrBuf *sbuf, gzFile *gz_file)
+    t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file)
+    t_buf_pos strbuf_gzreadline(StrBuf *sbuf, gzFile gz_file)
 
 Skip a line and return how many characters were skipped
 
     t_buf_pos strbuf_skip_line(FILE *file)
-    t_buf_pos strbuf_gzskip_line(gzFile *gz_file)
+    t_buf_pos strbuf_gzskip_line(gzFile gz_file)
 
 Read a line but no more than len bytes
 
     t_buf_pos strbuf_read(StrBuf *sbuf, FILE *file, t_buf_pos len)
-    t_buf_pos strbuf_gzread(StrBuf *sbuf, gzFile *file, t_buf_pos len)
+    t_buf_pos strbuf_gzread(StrBuf *sbuf, gzFile file, t_buf_pos len)
 
 String functions
 ----------------
