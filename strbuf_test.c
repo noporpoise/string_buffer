@@ -4,7 +4,7 @@
  url: https://github.com/noporpoise/StringBuffer
  author: Isaac Turner <turner.isaac@gmail.com>
 
- Copyright (c) 2011, Isaac Turner
+ Copyright (c) 2013, Isaac Turner
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -121,7 +121,7 @@ void test_sprintf()
   char *a = "wooo-%s-xx";
   char *b = "hihi";
 
-  strbuf_sprintf_at(sbuf, strbuf_len(sbuf), a, b);
+  strbuf_sprintf_at(sbuf, sbuf->len, a, b);
   printf("'%s' (length: %lu)\n", sbuf->buff, sbuf->len);
 
   strbuf_reset(sbuf);
@@ -140,7 +140,7 @@ void test_sscanf()
   
   strbuf_ensure_capacity(sbuf, strlen(input));
   sscanf(input, "I'm sorry %s I can't do that", sbuf->buff);
-  strbuf_update_len(sbuf);
+  sbuf->len = strlen(sbuf->buff);
 
   printf("Name: '%s'\n", sbuf->buff);
 
@@ -150,7 +150,7 @@ void test_sscanf()
 void test_insert()
 {
   StrBuf *sbuf = strbuf_create("hello hello");
-  strbuf_insert(sbuf, 6, sbuf, 3, 5);
+  strbuf_insert(sbuf, 6, sbuf->buff+3, 5);
   printf("result: '%s'\n", sbuf->buff);
 }
 

@@ -51,11 +51,7 @@ Example Code
       // e.g. chomp (remove newline)
       strbuf_chomp(myBuff)
 
-      // e.g. print to stdout
-      strbuf_puts(myBuff)
-
-      // Print out a newline
-      putc("\n")
+      printf("%s\n", myBuff->buff)
 
       // Reset StrBuf so you're not just concatenating all the lines in memory
       strbuf_reset(myBuff)
@@ -84,12 +80,12 @@ Test if the StrBuf contains 'hello' from index 12
 Functions
 =========
 
-    struct StrBuf
+    typedef struct
     {
       char *buff;
       t_buf_pos len; // length of the string
-      t_buf_pos size; // buffer size - includes '\0' (size is always >= len+1)
-    };
+      t_buf_pos capacity; // buffer size - includes '\0' (size is always >= len+1)
+    } StrBuf;
 
 Creators, destructors etc.
 --------------------------
@@ -104,10 +100,6 @@ Destructors
 
     void strbuf_free(StrBuf* sbuf)
 
-Free sbuf struct, but retain and return the char array
-
-    char* strbuf_free_get_str(StrBuf* sbuf)
-
 Clone a string buffer (including content)
 
     StrBuf* strbuf_clone(const StrBuf* sbuf)
@@ -121,14 +113,6 @@ Clear the content of an existing StrBuf (sets size to 0)
 
     void strbuf_reset(StrBuf* sbuf)
 
-Get number of characters in buffer
-
-    t_buf_pos strbuf_len(const StrBuf* sbuf)
-
-Get current capacity
-
-    t_buf_pos strbuf_size(const StrBuf* sbuf)
-
 Resizing
 --------
 
@@ -141,14 +125,6 @@ Ensure capacity for len characters plus '\0' character - exits on FAILURE
 reallocs to exact memory specified - return 1 on success 0 on failure
 
     char strbuf_resize(StrBuf *sbuf, const t_buf_pos new_size)
-
-convenience function: prints error and exits with EXIT_FAILURE if it fails
-
-    void strbuf_resize_vital(StrBuf *sbuf, const t_buf_pos new_size)
-
-Shorten string without reallocating memory
-
-    void strbuf_shrink(StrBuf *sbuf, const t_buf_pos new_len)
 
 Useful functions
 ----------------
@@ -166,12 +142,15 @@ The string can be a string within the given string buffer
 Add a character to the end of this StrBuf
 
     void strbuf_append_char(StrBuf* sbuf, const char txt)
+
 Copy a StrBuf to the end of this StrBuf
 
     void strbuf_append_buff(StrBuf* dst, StrBuf* src)
+
 Copy a character array to the end of this StrBuf
 
     void strbuf_append_str(StrBuf* sbuf, const char* txt)
+
 Copy N characters from a character array to the end of this StrBuf
 
     void strbuf_append_strn(StrBuf* sbuf, const char* txt, const t_buf_pos len)
@@ -185,10 +164,6 @@ Reverse a string
 
     void strbuf_reverse(StrBuf *sbuf)
 
-Reverse a string region
-
-    void strbuf_reverse_region(StrBuf *sbuf, t_buf_pos start, t_buf_pos length)
-
 Get a substring as a new null terminated char array
 (remember to free the returned char* after you're done with it!)
 
@@ -200,50 +175,15 @@ Change to upper or lower case
     void strbuf_to_lowercase(StrBuf *sbuf)
 
 Copy a string to this StrBuf, overwriting any existing characters
-
-    void strbuf_copy(StrBuf* dst, const t_buf_pos dst_pos,
-                     const StrBuf* src, const t_buf_pos src_pos,
-                     const t_buf_pos len)
-
-Overwrite a portion of an StrBuf with a new string
 Note: dst_pos + len can be longer the the current dst StrBuf
 
-    void strbuf_overwrite_str(StrBuf* dst, const t_buf_pos dst_pos,
-                              const char* src, const t_buf_pos len)
+    void strbuf_copy(StrBuf* dst, size_t dst_pos,
+                     const char* src, size_t len)
 
-Insert -- copy to a StrBuf, shifting any existing characters along to the right
+Insert: copy to a StrBuf, shifting any existing characters along
 
-    void strbuf_insert(StrBuf* dst, const t_buf_pos dst_pos,
-                       const StrBuf* src, const t_buf_pos src_pos,
-                       const t_buf_pos len)
-
-Insert a from a `char*`
-
-    void strbuf_insert_str(StrBuf* dst, const t_buf_pos dst_pos,
-                           const char* src, const t_buf_pos len)
-
-Insert a single char
-
-    void strbuf_insert_char(StrBuf* dst, const t_buf_pos dst_pos, const char c)
-
-Printing to streams
--------------------
-
-Print to stdout. Returns number of bytes printed
-
-    int strbuf_puts(StrBuf* sbuf)
-
-Print to FILE stream. Returns number of bytes printed
-
-    int strbuf_fputs(StrBuf* sbuf, FILE* out)
-
-    size_t strbuf_fwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
-                         FILE* out)
-
-    int strbuf_gzputs(StrBuf* sbuf, gzFile gzout)
-
-    int strbuf_gzwrite(StrBuf* sbuf, const t_buf_pos pos, const t_buf_pos len,
-                       gzFile gzout)
+    void strbuf_insert(StrBuf* dst, size_t dst_pos,
+                       const char* src, size_t len)
 
 Formatted strings (sprintf)
 ---------------------------
@@ -314,7 +254,7 @@ correctly.
     
     strbuf_ensure_capacity(sbuf, strlen(input));
     sscanf(input, "I'm sorry %s I can't do that", sbuf->buff);
-    strbuf_update_len(sbuf);
+    sbuf->len = strlen(sbuf->buff);
 
     printf("Name: '%s'\n", sbuf->buff);
 
@@ -325,6 +265,7 @@ Other string functions
 
 These work on `char*` not `StrBuf`, but they're here because they're useful. 
 
+    void string_reverse_region(char *str, size_t length)
     char string_is_all_whitespace(const char* s)
     char* string_next_nonwhitespace(const char* s)
     char* string_trim(char* str)
@@ -336,7 +277,7 @@ These work on `char*` not `StrBuf`, but they're here because they're useful.
 License
 =======
 
-    Copyright (c) 2011-2, Isaac Turner
+    Copyright (c) 2011-3, Isaac Turner
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -358,7 +299,7 @@ License
 Development
 ===========
 
-Short term goals: none -- please suggest some!
+Todo: write unit tests
 
 I like to hear about how you're using it, what bugs you've found and what
 features you'd like to see!  Contact me: Isaac Turner <turner.isaac@gmail>
