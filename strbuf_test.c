@@ -147,18 +147,16 @@ void test_sscanf()
   strbuf_free(sbuf);
 }
 
-int main(int argc, char* argv[])
+void test_insert()
 {
-  if(argc != 1)
-  {
-    int i;
-    printf("Unused arguments: %s", argv[1]);
-    for(i = 2; i < argc; i++) {
-      printf(", %s", argv[i]);
-    }
-    printf("\n");
-    exit(EXIT_FAILURE);
-  }
+  StrBuf *sbuf = strbuf_create("hello hello");
+  strbuf_insert(sbuf, 6, sbuf, 3, 5);
+  printf("result: '%s'\n", sbuf->buff);
+}
+
+int main()
+{
+  test_insert();
 
   test_sscanf();
 
@@ -171,5 +169,5 @@ int main(int argc, char* argv[])
   test_split();
   test_trim();
   
-  return EXIT_SUCCESS;
+  return 0;
 }

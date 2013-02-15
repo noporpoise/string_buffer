@@ -496,8 +496,29 @@ void strbuf_insert_strn(StrBuf* dst, t_buf_pos dst_pos,
             (size_t)(dst->len - dst_pos));
   }
 
-  // Insert
-  memmove(dst->buff + dst_pos, src, (size_t)len);
+  if(src >= dst->buff && src <= dst->buff + dst->len)
+  {
+    // Insert may be pointing to string upstream of insert site
+    size_t bytes_inserted = 0;
+    char *insert = dst->buff+dst_pos;
+
+    if(src < insert)
+    {
+      bytes_inserted = MIN((size_t)(insert-src), len);
+      memmove(insert, src, bytes_inserted);
+    }
+
+    if(bytes_inserted < len)
+    {
+      size_t remaining = len-bytes_inserted;
+      memmove(insert+bytes_inserted, insert+len+bytes_inserted, remaining);
+    }
+  }
+  else
+  {
+    // Clean insert
+    memmove(dst->buff + dst_pos, src, (size_t)len);
+  }
 
   // Update size
   dst->len = dst->len + len;
