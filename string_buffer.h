@@ -31,12 +31,16 @@
 #include <zlib.h> // needed for gzFile
 #include <stdarg.h> // needed for va_list
 
+#include "buffered_input.h"
+
 typedef struct
 {
   char *buff;
   size_t len; // length of the string
   size_t capacity; // buffer size - includes '\0' (size >= len+1)
 } StrBuf;
+
+#define sbuf_strlen(sb) ((sb)->len)
 
 //
 // Creation, reset, free and memory expansion
@@ -53,10 +57,6 @@ void strbuf_free(StrBuf* sbuf);
 // Clone a buffer (including content)
 StrBuf* strbuf_clone(const StrBuf* sbuf);
 
-// Get a copy of this StrBuf as a char array
-// Returns NULL if not enough memory
-char* strbuf_as_str(const StrBuf* sbuf);
-
 // Clear the content of an existing StrBuf (sets size to 0)
 void strbuf_reset(StrBuf* sbuf);
 
@@ -67,19 +67,26 @@ void strbuf_reset(StrBuf* sbuf);
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
 void strbuf_ensure_capacity(StrBuf *sbuf, size_t len);
 
-// reallocs to exact memory specified - return 1 on success 0 on failure
+// Resize the buffer to have capacity to hold a string of length new_len
+// (+ a null terminating character).  Can also be used to downsize the buffer's
+// memory usage.  Returns 1 on success, 0 on failure.
 char strbuf_resize(StrBuf *sbuf, size_t new_size);
 
 //
 // Useful String functions
 //
 
-// get/set chars
+// Get a char (index < strlen(sbuf))
 char strbuf_get_char(const StrBuf *sbuf, size_t index);
+// Can set a char <= strlen(sbuf->buff)
 void strbuf_set_char(StrBuf *sbuf, size_t index, char c);
 
 // Set string buffer to contain a given string
 void strbuf_set(StrBuf *sbuf, const char *str);
+
+// Get a copy of this StrBuf as a char array
+// Returns NULL if not enough memory
+char* strbuf_as_str(const StrBuf* sbuf);
 
 // Add a character to the end of this StrBuf
 void strbuf_append_char(StrBuf* sbuf, char c);
@@ -141,12 +148,14 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 // Reading a FILE
 size_t strbuf_reset_readline(StrBuf *sbuf, FILE *file);
 size_t strbuf_readline(StrBuf *sbuf, FILE *file);
+size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in);
 size_t strbuf_skip_line(FILE *file);
 size_t strbuf_read(StrBuf *sbuf, FILE *file, size_t len);
 
 // Reading a gzFile
 size_t strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file);
 size_t strbuf_gzreadline(StrBuf *sbuf, gzFile gz_file);
+size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile gz_file, buffer_t *in);
 size_t strbuf_gzskip_line(gzFile gz_file);
 size_t strbuf_gzread(StrBuf *sbuf, gzFile gz_file, size_t len);
 
@@ -173,7 +182,8 @@ void string_reverse_region(char *str, size_t length);
 char string_is_all_whitespace(const char* s);
 char* string_next_nonwhitespace(char* s);
 char* string_trim(char* str);
-size_t string_chomp(char* str);
+// Chomp a string, returns new length
+size_t string_chomp(char* str, size_t len);
 size_t string_count_char(const char* str, int c);
 long string_split(const char* split, const char* txt, char*** result);
 

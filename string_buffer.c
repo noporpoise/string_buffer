@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <ctype.h> // toupper() and tolower()
 
 #include "string_buffer.h"
@@ -34,8 +35,55 @@
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN_SIZE 16
 
-// Buffer functions
-#define ROUNDUP2POW(x) (0x1 << (64 - __builtin_clzl(x)))
+#ifndef ROUNDUP2POW
+  #define ROUNDUP2POW(x) (0x1 << (64 - __builtin_clzl(x)))
+#endif
+
+/*********************/
+/*  Bounds checking  */
+/*********************/
+
+// Bounds check when inserting (pos <= len are valid)
+void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
+                          const char* file, int line, const char* func)
+{
+  if(pos > sbuf->len)
+  {
+    fprintf(stderr, "%s:%i:%s() - out of bounds error "
+                    "[index: %zd, num_of_bits: %zd]\n",
+            file, line, func, pos, sbuf->len);
+    errno = EDOM;
+    exit(EXIT_FAILURE);
+  }
+}
+
+// Bounds check when reading (pos < len are valid)
+void _bounds_check_read(const StrBuf* sbuf, size_t pos,
+                        const char* file, int line, const char* func)
+{
+  if(pos >= sbuf->len)
+  {
+    fprintf(stderr, "%s:%i:%s() - out of bounds error "
+                    "[index: %zd, num_of_bits: %zd]\n",
+            file, line, func, pos, sbuf->len);
+    errno = EDOM;
+    exit(EXIT_FAILURE);
+  }
+}
+
+// Bounds check when reading a range (start+len < strlen is valid)
+void _bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
+                              const char* file, int line, const char* func)
+{
+  if(start + len > sbuf->len)
+  {
+    fprintf(stderr, "%s:%i:%s() - out of bounds error "
+                    "[start: %zd; length: %zd; strlen: %zd]\n",
+            file, line, func, start, len, sbuf->len);
+    errno = EDOM;
+    exit(EXIT_FAILURE);
+  }
+}
 
 /******************************/
 /*  Constructors/Destructors  */
@@ -118,39 +166,22 @@ char* strbuf_as_str(const StrBuf* sbuf)
 
 char strbuf_get_char(const StrBuf *sbuf, size_t index)
 {
-  // Bounds checking
-  if(index >= sbuf->len)
-  {
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_get_char(index: %lu) [strlen: %lu]\n",
-            (unsigned long)index, (unsigned long)sbuf->len);
-
-    return -1;
-  }
-
+  _bounds_check_read(sbuf, index, __FILE__, __LINE__, "strbuf_get_char");
   return sbuf->buff[index];
 }
 
 void strbuf_set_char(StrBuf *sbuf, size_t index, char c)
 {
-  // Bounds checking
-  if(index > sbuf->len)
-  {
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_set_char(index: %lu, %c) [strlen: %lu]\n",
-            (unsigned long)index, c, (unsigned long)sbuf->len);
+  _bounds_check_insert(sbuf, index, __FILE__, __LINE__, "strbuf_set_char");
 
-    return;
-  }
-  else if(index == sbuf->len)
+  if(index == sbuf->len)
   {
     // Extend
     strbuf_ensure_capacity(sbuf, sbuf->len + 1);
     sbuf->buff[sbuf->len++] = c;
     sbuf->buff[sbuf->len] = '\0';
   }
-  else
-  {
+  else {
     sbuf->buff[index] = c;
   }
 }
@@ -173,6 +204,9 @@ void strbuf_set(StrBuf *sbuf, const char *str)
 /*  Resize Buffer Functions   */
 /******************************/
 
+// Resize the buffer to have capacity to hold a string of length new_len
+// (+ a null terminating character).  Can also be used to downsize the buffer's
+// memory usage.  Returns 1 on success, 0 on failure.
 char strbuf_resize(StrBuf *sbuf, size_t new_len)
 {
   size_t capacity = ROUNDUP2POW(new_len+1);
@@ -182,36 +216,26 @@ char strbuf_resize(StrBuf *sbuf, size_t new_len)
   sbuf->buff = new_buff;
   sbuf->capacity = capacity;
 
-  if(sbuf->len+1 >= sbuf->capacity)
+  if(sbuf->len > new_len)
   {
     // Buffer was shrunk - add null byte
-    sbuf->len = sbuf->capacity-1;
+    sbuf->len = new_len;
     sbuf->buff[sbuf->len] = '\0';
   }
 
   return 1;
 }
 
-// Internal function
-void _strbuf_resize_vital(StrBuf *sbuf, size_t new_len)
-{
-  if(!strbuf_resize(sbuf, new_len))
-  {
-    fprintf(stderr, "Error: StrBuf couldn't be given more memory.  "
-                    "Requested %lui bytes.  StrBuf begins '%s...'",
-            new_len, strbuf_substr(sbuf, 0, 5));
-    
-    free(sbuf->buff);
-    
-    exit(EXIT_FAILURE);
-  }
-}
-
 // Ensure capacity for len characters plus '\0' character
 void strbuf_ensure_capacity(StrBuf *sbuf, size_t len)
 {
-  if(sbuf->capacity > len+1) return;
-  _strbuf_resize_vital(sbuf, len);
+  if(sbuf->capacity <= len+1 && !strbuf_resize(sbuf, len))
+  {
+    fprintf(stderr, "%s:%i:Error: strbuf_ensure_capacity couldn't be resize "
+                    "buffer. [requested %zd bytes; StrBuf begins '%s']",
+            __FILE__, __LINE__, len, strbuf_substr(sbuf, 0, 5));
+    exit(EXIT_FAILURE);
+  }
 }
 
 /********************/
@@ -228,10 +252,8 @@ void strbuf_append_strn(StrBuf* sbuf, const char* txt, size_t len)
 {
   // plus 1 for '\0'
   strbuf_ensure_capacity(sbuf, sbuf->len + len);
-
   strncpy(sbuf->buff+sbuf->len, txt, len);
   sbuf->len += len;
-
   sbuf->buff[sbuf->len] = '\0';
 }
 
@@ -239,7 +261,6 @@ void strbuf_append_char(StrBuf* sbuf, char c)
 {
   // Adding one character
   strbuf_ensure_capacity(sbuf, sbuf->len + 1);
-
   sbuf->buff[(sbuf->len)++] = c;
   sbuf->buff[sbuf->len] = '\0';
 }
@@ -248,9 +269,7 @@ void strbuf_append_char(StrBuf* sbuf, char c)
 void strbuf_append_buff(StrBuf* dst, StrBuf* src)
 {
   strbuf_ensure_capacity(dst, dst->len + src->len);
-
   memcpy(dst->buff + dst->len, src->buff, src->len);
-
   dst->len += src->len;
   dst->buff[dst->len] = '\0';
 }
@@ -259,12 +278,10 @@ void strbuf_append_buff(StrBuf* dst, StrBuf* src)
 // Returns the number of characters removed
 size_t strbuf_chomp(StrBuf *sbuf)
 {
-  char *end = sbuf->buff + sbuf->len;
-  while(end > sbuf->buff && (*(end-1) == '\n' || *(end-1) == '\r')) end--;
-  size_t lost = (sbuf->buff + sbuf->len) - end;
-  sbuf->len = end - sbuf->buff;
+  size_t old_len = sbuf->len;
+  sbuf->len = string_chomp(sbuf->buff, sbuf->len);
   sbuf->buff[sbuf->len-1] = 0;
-  return lost;
+  return old_len - sbuf->len;
 }
 
 // Reverse a string
@@ -275,15 +292,7 @@ void strbuf_reverse(StrBuf *sbuf)
 
 char* strbuf_substr(StrBuf *sbuf, size_t start, size_t len)
 {
-  // Bounds checking
-  if(start + len >= sbuf->len)
-  {
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_substr(start: %lui, len: %lui) [strlen: %lu]\n",
-            (unsigned long)start, (unsigned long)len, (unsigned long)sbuf->len);
-
-    return NULL;
-  }
+  _bounds_check_read_range(sbuf, start, len, __FILE__, __LINE__, "strbuf_substr");
 
   char* new_string = (char*) malloc(len+1);
   strncpy(new_string, sbuf->buff + start, len);
@@ -311,17 +320,10 @@ void strbuf_to_lowercase(StrBuf *sbuf)
 void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 {
   if(src == NULL || len == 0) return;
-  else if(dst_pos > dst->len)
-  {
-    // Insert position cannot be greater than current string length
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_str_copy(index: %lu) [strlen: %lu]",
-            (unsigned long)dst_pos, (unsigned long)dst->len);
 
-    return;
-  }
+  _bounds_check_insert(dst, dst_pos, __FILE__, __LINE__, "strbuf_copy");
 
-  // Check if dest buffer can handle string
+  // Check if dst buffer can handle string
   strbuf_ensure_capacity(dst, dst_pos + len);
 
   // memmove instead of strncpy, as it can handle overlapping regions
@@ -339,17 +341,10 @@ void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 {
   if(src == NULL || len == 0) return;
-  else if(dst_pos > dst->len)
-  {
-    // Insert position cannot be greater than current string length
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_insert(index: %lu) [strlen: %lu]",
-            (unsigned long)dst_pos, (unsigned long)dst->len);
 
-    return;
-  }
+  _bounds_check_insert(dst, dst_pos, __FILE__, __LINE__, "strbuf_insert");
 
-  // Check if dest buffer can handle string plus \0
+  // Check if dst buffer can handle string plus \0
   strbuf_ensure_capacity(dst, dst->len + len);
   char *insert = dst->buff+dst_pos;
 
@@ -381,15 +376,7 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 
 int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
 {
-  // Bounds check
-  if(pos > sbuf->len)
-  {
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_vsprintf(index: %lu) [strlen: %lu]",
-            (unsigned long)pos, (unsigned long)sbuf->len);
-
-    return -1;
-  }
+  _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_vsprintf");
 
   // Length of remaining buffer
   size_t buf_len = (size_t)(sbuf->capacity - pos);
@@ -443,15 +430,7 @@ int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...)
 
 int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 {
-  // Bounds check
-  if(pos > sbuf->len)
-  {
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_sprintf_at(index: %lu) [strlen: %lu]",
-            (unsigned long)pos, (unsigned long)sbuf->len);
-
-    return -1;
-  }
+  _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_sprintf_at");
 
   va_list argptr;
   va_start(argptr, fmt);
@@ -465,14 +444,7 @@ int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 // (vs at the end)
 int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 {
-  // Bounds check
-  if(pos > sbuf->len)
-  {
-    fprintf(stderr, "StrBuf OutOfBounds Error: "
-                    "strbuf_sprintf_noterm(index: %lu) [strlen: %lu]",
-            (unsigned long)pos, (unsigned long)sbuf->len);
-    return -1;
-  }
+  _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_sprintf_noterm");
 
   va_list argptr;
   va_start(argptr, fmt);
@@ -497,47 +469,44 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 /* File handling */
 /*****************/
 
-// Define read for gzFile and FILE (unbuffered)
-#define gzread2(gz,buf,len) gzread(gz,buf,len)
-#define fread2(f,buf,len) fread(buf,sizeof(char),len,file)
+BUFFERED_INPUT_SETUP(StrBuf, buff, len, capacity);
 
-#define gzgets2(gz,buf,len) gzgets(gz,buf,len)
-#define fgets2(f,buf,len) fgets(buf,len,f)
 
-// fgetc(f), gzgetc(gz) are already good to go
+// Reading a FILE
+size_t strbuf_readline(StrBuf *sbuf, FILE *file)
+{
+  return freadline(file, sbuf);
+}
 
-// Define readline for gzFile and FILE (unbuffered)
-#define _func_readline(fname,type_t,__gets) \
-  size_t fname(StrBuf *sbuf, type_t file)                                      \
-  {                                                                            \
-    strbuf_ensure_capacity(sbuf, sbuf->len+1);                                 \
-    size_t n, total_read = 0;                                                  \
-    while(__gets(file, sbuf->buff+sbuf->len, sbuf->capacity - sbuf->len))      \
-    {                                                                          \
-      n = strlen(sbuf->buff+sbuf->len);                                        \
-      sbuf->len += n; total_read += n;                                         \
-      if(sbuf->buff[sbuf->len-1] == '\n') return total_read;                   \
-      else sbuf->buff = realloc(sbuf->buff, sbuf->capacity <<= 1);             \
-    }                                                                          \
-    return total_read;                                                         \
-  }
+size_t strbuf_gzreadline(StrBuf *sbuf, gzFile file)
+{
+  return gzreadline(file, sbuf);
+}
 
-_func_readline(strbuf_gzreadline,gzFile,gzgets2)
-_func_readline(strbuf_readline,FILE*,fgets2)
+// Reading a FILE
+size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in)
+{
+  return freadline_buf(file, in, sbuf);
+}
 
-#define _func_read(name,type_t,readfunc) \
+size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile file, buffer_t *in)
+{
+  return gzreadline_buf(file, in, sbuf);
+}
+
+#define _func_read(name,type_t,__read) \
   size_t name(StrBuf *sbuf, type_t file, size_t len)                           \
   {                                                                            \
     if(len == 0) return 0;                                                     \
     strbuf_ensure_capacity(sbuf, sbuf->len + len);                             \
-    int read;                                                                  \
-    if((read = readfunc(file,sbuf->buff+sbuf->len,len)) <= 0) return 0;        \
+    long read;                                                                 \
+    if((read = __read(file,sbuf->buff+sbuf->len,len)) <= 0) return 0;          \
     sbuf->len += read;                                                         \
     return read;                                                               \
   }
 
-_func_read(strbuf_gzread,gzFile,gzread2)
-_func_read(strbuf_fread,FILE*,fread2)
+_func_read(strbuf_gzread, gzFile, gzread2)
+_func_read(strbuf_fread, FILE*, fread2)
 
 // read FILE
 // returns number of characters read
@@ -551,28 +520,21 @@ size_t strbuf_reset_readline(StrBuf *sbuf, FILE *file)
 // read gzFile
 // returns number of characters read
 // or 0 if EOF
-size_t strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file)
+size_t strbuf_reset_gzreadline(StrBuf *sbuf, gzFile file)
 {
   strbuf_reset(sbuf);
-  return strbuf_gzreadline(sbuf, gz_file);
+  return strbuf_gzreadline(sbuf, file);
 }
 
-// These two functions are the same apart from calling fgetc / gzgetc
-// (strbuf_skip_line, strbuf_gzskip_line)
-#define skip_line(fname,ftype,readc) \
-  size_t fname(ftype file)                                                     \
-  {                                                                            \
-    int c;                                                                     \
-    size_t count = 0;                                                          \
-    while((c = readc(file)) != -1) {                                           \
-      count++;                                                                 \
-      if(c == '\n') break;                                                     \
-    }                                                                          \
-    return count;                                                              \
-  }
+size_t strbuf_skip_line(FILE* file)
+{
+  return fskipline(file);
+}
 
-skip_line(strbuf_skip_line,FILE*,fgetc)
-skip_line(strbuf_gzskip_line,gzFile,gzgetc)
+size_t strbuf_gzskip_line(gzFile file)
+{
+  return gzskipline(file);
+}
 
 //
 // String functions
@@ -674,17 +636,15 @@ char* string_trim(char* str)
   while(len > 0 && isspace(*(str+len-1))) len--;
   *(str+len) = '\0';
 
-  // Work forwards
-  // don't need start < len because will hit \0
+  // Work forwards: don't need start < len because will hit \0
   while(isspace(*str)) str++;
 
   return str;
 }
 
 // Removes \r and \n from the ends of a string and returns the new length
-size_t string_chomp(char* str)
+size_t string_chomp(char* str, size_t len)
 {
-  size_t len = strlen(str);
   while(len > 0 && (str[len-1] == '\r' || str[len-1] == '\n')) len--;
   str[len] = '\0';
   return len;

@@ -120,9 +120,9 @@ Ensure capacity for len characters plus '\0' character - exits on FAILURE
 
     void strbuf_ensure_capacity(StrBuf *sbuf, const t_buf_pos len)
 
-*More specialised -- used less frequently:*
-
-reallocs to exact memory specified - return 1 on success 0 on failure
+Resize the buffer to have capacity to hold a string of length new_len
+(+ a null terminating character).  Can also be used to downsize the buffer's
+memory usage.  Returns 1 on success, 0 on failure.
 
     char strbuf_resize(StrBuf *sbuf, const t_buf_pos new_size)
 
