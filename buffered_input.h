@@ -22,21 +22,21 @@ typedef struct
 
 static inline char buffer_init(buffer_t *b, size_t s)
 {
-  if((b->b = malloc(sizeof(char)*s)) == NULL) return 0;
-  b->size = s;
+  b->size = s < 4 ? 4 : ROUNDUP2POW(s);
+  if((b->b = malloc(sizeof(char)*b->size)) == NULL) return 0;
   b->begin = b->end = 0;
   return 1;
 }
 
-static inline buffer_t* buffer_alloc(size_t s)
+static inline buffer_t* buffer_new(size_t s)
 {
   buffer_t *b = (buffer_t*)malloc(sizeof(buffer_t));
   if(b == NULL) return NULL;
   else if(buffer_init(b,s)) return b;
-  free(b); return NULL; /* couldn't malloc */
+  else { free(b); return NULL; } /* couldn't malloc */
 }
 
-#define buffer_destroy(buf) do{free((buf)->b); free(buf); } while(0)
+#define buffer_free(buf) do{free((buf)->b); free(buf); } while(0)
 
 // size_t s is the number of bytes you want to be able to store
 // the actual buffer is created with s+1 bytes to allow for the \0
@@ -65,6 +65,7 @@ static inline void buffer_append_char(buffer_t *buf, char c)
 
 #define buffer_terminate(buf) ((buf)->b[(buf)->end] = 0)
 
+// Beware: buffer_chomp only removes 1 end-of-line at a time
 #define buffer_chomp(buf) do { \
     if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\n') {                     \
       (buf)->end--;                                                            \
@@ -86,6 +87,14 @@ gzreadline(gz,out)
 freadline(f,out)
 */
 
+#define _ENSURE_CAPACITY(buf,sspace,size) do {                                 \
+    size_t space = sspace+1;                                                   \
+    if(*size < space) {                                                        \
+      *size = ROUNDUP2POW(space);                                              \
+      *buf = realloc(*buf, *size);                                             \
+    }                                                                          \
+  } while(0)
+
 // Define read for gzFile and FILE (unbuffered)
 #define gzread2(gz,buf,len) gzread(gz,buf,(unsigned int)len)
 #define fread2(f,buf,len) fread(buf,sizeof(char),len,file)
@@ -93,26 +102,29 @@ freadline(f,out)
 #define gzgets2(gz,buf,len) gzgets(gz,buf,(int)(len))
 #define fgets2(f,buf,len) fgets(buf,(int)(len),f)
 
+#define gzputs2(gz,buf) gzputs(gz,buf)
+#define fputs2(f,buf) fputs(buf,f)
+
 // fgetc(f), gzgetc(gz) are already good to go
 
 // Define readline for gzFile and FILE (unbuffered)
-#define _func_readline(name,type_t,__gets,s_name,chars,len_field,size_field)   \
-  static inline size_t name(type_t file, s_name *buf)                          \
+#define _func_readline(name,type_t,__gets) \
+  static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
   {                                                                            \
-    _ENSURE_CAPACITY(buf, buf->len_field+1, chars, size_field);                \
+    _ENSURE_CAPACITY(buf, *len+1, size);                                       \
     size_t n, total_read = 0;                                                  \
-    while(__gets(file, buf->chars+buf->len_field, buf->size_field-buf->len_field)) \
+    while(__gets(file, *buf+*len, *size-*len) != NULL)                         \
     {                                                                          \
-      n = strlen(buf->chars+buf->len_field);                                   \
-      buf->len_field += n; total_read += n;                                    \
-      if(buf->chars[buf->len_field-1] == '\n') return total_read;              \
-      else buf->chars = realloc(buf->chars, buf->size_field <<= 1);            \
+      n = strlen(*buf+*len);                                                   \
+      *len += n; total_read += n;                                              \
+      if((*buf)[*len-1] == '\n') return total_read;                            \
+      else *buf = realloc(*buf, *size <<= 1);                                  \
     }                                                                          \
     return total_read;                                                         \
   }
 
-// _func_readline(gzreadline,gzFile,gzgets2)
-// _func_readline(freadline,FILE*,fgets2)
+_func_readline(gzreadline,gzFile,gzgets2)
+_func_readline(freadline,FILE*,fgets2)
 
 // Define skipline
 #define _func_skipline(fname,ftype,readc) \
@@ -139,15 +151,8 @@ gzreadline_buf(gz,in,out)
 freadline_buf(f,in,out)
 */
 
-#define _ENSURE_CAPACITY(buf,s,chars,size) do {                                \
-    size_t ss = s+1;                                                           \
-    if(buf->size < ss) {                                                       \
-      buf->size = ROUNDUP2POW(ss);                                             \
-      buf->chars = realloc(buf->chars, buf->size);                             \
-    }                                                                          \
-  } while(0)
-
 // __read is either gzread2 or fread2
+// Beware: read-in buffer is not null-terminated
 #define _READ_BUFFER(file,in,__read) do {                                      \
     long input = __read(file,in->b,in->size);                                  \
     (in)->end = input < 0 ? 0 : input;                                         \
@@ -169,8 +174,9 @@ _func_getc_buf(gzgetc_buf,gzFile,gzread2)
 _func_getc_buf(fgetc_buf,FILE*,fread2)
 
 // Define readline for gzFile and FILE (buffered)
-#define _func_readline_buf(fname,type_t,__read,s_name,chars,len_field,size_field) \
-  static inline size_t fname(type_t file, buffer_t *in, s_name *buf)           \
+#define _func_readline_buf(fname,type_t,__read) \
+  static inline size_t fname(type_t file, buffer_t *in,                        \
+                             char **buf, size_t *len, size_t *size)            \
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read); }                 \
     size_t offset, buffered, total_read = 0;                                   \
@@ -178,20 +184,20 @@ _func_getc_buf(fgetc_buf,FILE*,fread2)
     {                                                                          \
       for(offset = in->begin; offset < in->end && in->b[offset++] != '\n'; );  \
       buffered = offset - in->begin;                                           \
-      _ENSURE_CAPACITY(buf, buf->len_field+buffered, chars, size_field);       \
-      memcpy(buf->chars+buf->len_field, in->b+in->begin, buffered);            \
-      buf->len_field += buffered;                                              \
+      _ENSURE_CAPACITY(buf, *len+buffered, size);                              \
+      memcpy(*buf+*len, in->b+in->begin, buffered);                            \
+      *len += buffered;                                                        \
       in->begin = offset;                                                      \
       total_read += buffered;                                                  \
-      if(buf->chars[buf->len_field-1] == '\n') break;                          \
+      if((*buf)[*len-1] == '\n') break;                                        \
       _READ_BUFFER(file,in,__read);                                            \
     }                                                                          \
-    buf->chars[buf->len_field] = 0;                                            \
+    (*buf)[*len] = 0;                                                          \
     return total_read;                                                         \
   }
 
-// _func_readline_buf(gzreadline_buf,gzFile,gzread2)
-// _func_readline_buf(freadline_buf,FILE*,fread2)
+_func_readline_buf(gzreadline_buf,gzFile,gzread2)
+_func_readline_buf(freadline_buf,FILE*,fread2)
 
 // Define buffered skipline
 #define _func_skipline_buf(fname,ftype,__read) \
@@ -215,8 +221,8 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 
 // Define buffered gzgets_buf, fgets_buf
 
-// Does not resize buf;  Reads upto len bytes or to the first \n if before then
-// Read len-1 bytes
+// Reads upto len-1 bytes (or to the first \n if first) into str
+// Adds null-terminating byte
 #define _func_gets_buf(fname,type_t,__read) \
   static inline char* fname(type_t file, buffer_t *in, char* str,              \
                             unsigned int len)                                  \
@@ -243,15 +249,5 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 
 _func_gets_buf(gzgets_buf,gzFile,gzread2)
 _func_gets_buf(fgets_buf,FILE*,fread2)
-
-
-#define BUFFERED_INPUT_SETUP(s_name,cfield,lfield,sfield)                      \
-  _func_readline(gzreadline,gzFile,gzgets2,s_name,cfield,lfield,sfield)        \
-  _func_readline(freadline,FILE*,fgets2,s_name,cfield,lfield,sfield)           \
-  _func_readline_buf(gzreadline_buf,gzFile,gzread2,s_name,cfield,lfield,sfield)\
-  _func_readline_buf(freadline_buf,FILE*,fread2,s_name,cfield,lfield,sfield)
-
-// e.g.
-// BUFFERED_INPUT_SETUP(buffer_t, b, end, size);
 
 #endif

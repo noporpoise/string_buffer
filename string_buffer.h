@@ -91,7 +91,7 @@ char* strbuf_as_str(const StrBuf* sbuf);
 // Add a character to the end of this StrBuf
 void strbuf_append_char(StrBuf* sbuf, char c);
 // Copy a StrBuf to the end of this StrBuf
-void strbuf_append_buff(StrBuf* dst, StrBuf* src);
+void strbuf_append_buff(StrBuf* dst, const StrBuf* src);
 // Copy a character array to the end of this StrBuf
 void strbuf_append_str(StrBuf* sbuf, const char* txt);
 // Copy N characters from a character array to the end of this StrBuf
@@ -106,7 +106,7 @@ void strbuf_reverse(StrBuf *sbuf);
 
 // Get a substring as a new null terminated char array
 // (remember to free the returned char* after you're done with it!)
-char* strbuf_substr(StrBuf *sbuf, size_t start, size_t len);
+char* strbuf_substr(const StrBuf *sbuf, size_t start, size_t len);
 
 // Change to upper or lower case
 void strbuf_to_uppercase(StrBuf *sbuf);
@@ -148,15 +148,17 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 // Reading a FILE
 size_t strbuf_reset_readline(StrBuf *sbuf, FILE *file);
 size_t strbuf_readline(StrBuf *sbuf, FILE *file);
+size_t strbuf_skipline(FILE *file);
 size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in);
-size_t strbuf_skip_line(FILE *file);
+size_t strbuf_skipline_buf(FILE* file, buffer_t *in);
 size_t strbuf_read(StrBuf *sbuf, FILE *file, size_t len);
 
 // Reading a gzFile
 size_t strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file);
 size_t strbuf_gzreadline(StrBuf *sbuf, gzFile gz_file);
+size_t strbuf_gzskipline(gzFile gz_file);
 size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile gz_file, buffer_t *in);
-size_t strbuf_gzskip_line(gzFile gz_file);
+size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in);
 size_t strbuf_gzread(StrBuf *sbuf, gzFile gz_file, size_t len);
 
 //
@@ -168,11 +170,11 @@ void strbuf_trim(StrBuf *sbuf);
 
 // Trim the characters listed in `list` from the left of `sbuf`
 // `list` is a null-terminated string of characters
-void strbuf_ltrim(StrBuf *sbuf, char* list);
+void strbuf_ltrim(StrBuf *sbuf, const char* list);
 
 // Trim the characters listed in `list` from the right of `sbuf`
 // `list` is a null-terminated string of characters
-void strbuf_rtrim(StrBuf *sbuf, char* list);
+void strbuf_rtrim(StrBuf *sbuf, const char* list);
 
 /**************************/
 /* Other String functions */

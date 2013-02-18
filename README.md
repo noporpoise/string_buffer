@@ -16,7 +16,7 @@ Features:
 - reverse region, convert to upper/lower case
 - sprintf into string buffer
 - read a line at a time from a file
-- write to a file
+- buffered reading (10X faster for older versions of zlib)
 - gzip file support
 
 To build the test code:
@@ -104,11 +104,6 @@ Clone a string buffer (including content)
 
     StrBuf* strbuf_clone(const StrBuf* sbuf)
 
-Get a copy of this StrBuf as a char array.
-Returns NULL if not enough memory.
-
-    char* strbuf_as_str(const StrBuf* sbuf)
-
 Clear the content of an existing StrBuf (sets size to 0)
 
     void strbuf_reset(StrBuf* sbuf)
@@ -138,6 +133,11 @@ Set string buffer to contain a given string
 The string can be a string within the given string buffer
 
     void strbuf_set(StrBuf *sbuf, const char *str)
+
+Get a copy of this StrBuf as a char array.
+Returns NULL if not enough memory.
+
+    char* strbuf_as_str(const StrBuf* sbuf)
 
 Add a character to the end of this StrBuf
 
@@ -217,13 +217,38 @@ Reading a gzFile
 
 Skip a line and return how many characters were skipped
 
-    t_buf_pos strbuf_skip_line(FILE *file)
-    t_buf_pos strbuf_gzskip_line(gzFile gz_file)
+    t_buf_pos strbuf_skipline(FILE *file)
+    t_buf_pos strbuf_gzskipline(gzFile gz_file)
 
 Read a line but no more than len bytes
 
     t_buf_pos strbuf_read(StrBuf *sbuf, FILE *file, t_buf_pos len)
     t_buf_pos strbuf_gzread(StrBuf *sbuf, gzFile file, t_buf_pos len)
+
+Buffered reading
+
+        size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile gz_file, buffer_t *in);
+        size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in);
+
+        size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in);
+        size_t strbuf_skipline_buf(FILE* file, buffer_t *in);
+
+Example of buffered reading:
+
+        gzFile gzf = gzopen("input.txt.gz", "r");
+        buffer_t *in = buffer_new();
+        StrBuf *line = strbuf_new();
+
+        while(strbuf_gzreadline_buf(line, gzf, in) > 0)
+        {
+          strbuf_chomp(line);
+          printf("read: %s\n", line->buff);
+        }
+
+        strbuf_free(line);
+        buffer_free(in);
+        gzclose(gzf);
+
 
 String functions
 ----------------
@@ -235,12 +260,12 @@ Trim whitespace characters from the start and end of a string
 Trim the characters listed in `list` from the left of `sbuf`.
 `list` is a null-terminated string of characters
 
-    void strbuf_ltrim(StrBuf *sbuf, char* list)
+    void strbuf_ltrim(StrBuf *sbuf, const char* list)
 
 Trim the characters listed in `list` from the right of `sbuf`.
 `list` is a null-terminated string of characters
 
-    void strbuf_rtrim(StrBuf *sbuf, char* list)
+    void strbuf_rtrim(StrBuf *sbuf, const char* list)
 
 Use with sscanf
 ---------------
@@ -267,7 +292,7 @@ These work on `char*` not `StrBuf`, but they're here because they're useful.
 
     void string_reverse_region(char *str, size_t length)
     char string_is_all_whitespace(const char* s)
-    char* string_next_nonwhitespace(const char* s)
+    char* string_next_nonwhitespace(char* s)
     char* string_trim(char* str)
     size_t string_chomp(char* str)
     size_t string_count_char(const char* str, const int c)
