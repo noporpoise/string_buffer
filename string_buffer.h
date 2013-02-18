@@ -40,7 +40,7 @@ typedef struct
   size_t capacity; // buffer size - includes '\0' (size >= len+1)
 } StrBuf;
 
-#define sbuf_strlen(sb) ((sb)->len)
+#define strbuf_len(sb) ((sb)->len)
 
 //
 // Creation, reset, free and memory expansion
