@@ -83,8 +83,8 @@ Functions
     typedef struct
     {
       char *buff;
-      t_buf_pos len; // length of the string
-      t_buf_pos capacity; // buffer size - includes '\0' (size is always >= len+1)
+      size_t len; // length of the string
+      size_t capacity; // buffer size - includes '\0' (size is always >= len+1)
     } StrBuf;
 
 Creators, destructors etc.
@@ -93,7 +93,7 @@ Creators, destructors etc.
 Constructors
 
     StrBuf* strbuf_new()
-    StrBuf* strbuf_init(const t_buf_pos size)
+    StrBuf* strbuf_init(const size_t size)
     StrBuf* strbuf_create(const char* str)
 
 Destructors
@@ -113,21 +113,21 @@ Resizing
 
 Ensure capacity for len characters plus '\0' character - exits on FAILURE
 
-    void strbuf_ensure_capacity(StrBuf *sbuf, const t_buf_pos len)
+    void strbuf_ensure_capacity(StrBuf *sbuf, const size_t len)
 
 Resize the buffer to have capacity to hold a string of length new_len
 (+ a null terminating character).  Can also be used to downsize the buffer's
 memory usage.  Returns 1 on success, 0 on failure.
 
-    char strbuf_resize(StrBuf *sbuf, const t_buf_pos new_size)
+    char strbuf_resize(StrBuf *sbuf, const size_t new_size)
 
 Useful functions
 ----------------
 
 get/set chars
 
-    char strbuf_get_char(const StrBuf *sbuf, const t_buf_pos index)
-    void strbuf_set_char(StrBuf *sbuf, const t_buf_pos index, const char c)
+    char strbuf_get_char(const StrBuf *sbuf, const size_t index)
+    void strbuf_set_char(StrBuf *sbuf, const size_t index, const char c)
 
 Set string buffer to contain a given string
 The string can be a string within the given string buffer
@@ -153,12 +153,12 @@ Copy a character array to the end of this StrBuf
 
 Copy N characters from a character array to the end of this StrBuf
 
-    void strbuf_append_strn(StrBuf* sbuf, const char* txt, const t_buf_pos len)
+    void strbuf_append_strn(StrBuf* sbuf, const char* txt, const size_t len)
 
 Remove \r and \n characters from the end of this StrBuf.
 Returns the number of characters removed
 
-    t_buf_pos strbuf_chomp(StrBuf *sbuf)
+    size_t strbuf_chomp(StrBuf *sbuf)
 
 Reverse a string
 
@@ -167,7 +167,7 @@ Reverse a string
 Get a substring as a new null terminated char array
 (remember to free the returned char* after you're done with it!)
 
-    char* strbuf_substr(StrBuf *sbuf, const t_buf_pos start, const t_buf_pos len)
+    char* strbuf_substr(StrBuf *sbuf, const size_t start, const size_t len)
 
 Change to upper or lower case
 
@@ -191,15 +191,15 @@ Formatted strings (sprintf)
 sprintf to a StrBuf (adds string terminator after sprint)
 
     int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...)
-    int strbuf_sprintf_at(StrBuf *sbuf, const t_buf_pos pos, const char* fmt, ...)
-    int strbuf_vsprintf(StrBuf *sbuf, const t_buf_pos pos,
+    int strbuf_sprintf_at(StrBuf *sbuf, const size_t pos, const char* fmt, ...)
+    int strbuf_vsprintf(StrBuf *sbuf, const size_t pos,
                         const char* fmt, va_list argptr)
 
 sprintf without terminating character.
 Does not prematurely end the string if you sprintf within the string
 (terminates string if sprintf to the end)
 
-    int strbuf_sprintf_noterm(StrBuf *sbuf, const t_buf_pos pos,
+    int strbuf_sprintf_noterm(StrBuf *sbuf, const size_t pos,
                               const char* fmt, ...)
 
 Reading files
@@ -207,23 +207,23 @@ Reading files
 
 Reading a FILE
 
-    t_buf_pos strbuf_reset_readline(StrBuf *sbuf, FILE *file)
-    t_buf_pos strbuf_readline(StrBuf *sbuf, FILE *gz_file)
+    size_t strbuf_reset_readline(StrBuf *sbuf, FILE *file)
+    size_t strbuf_readline(StrBuf *sbuf, FILE *gz_file)
 
 Reading a gzFile
 
-    t_buf_pos strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file)
-    t_buf_pos strbuf_gzreadline(StrBuf *sbuf, gzFile gz_file)
+    size_t strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file)
+    size_t strbuf_gzreadline(StrBuf *sbuf, gzFile gz_file)
 
 Skip a line and return how many characters were skipped
 
-    t_buf_pos strbuf_skipline(FILE *file)
-    t_buf_pos strbuf_gzskipline(gzFile gz_file)
+    size_t strbuf_skipline(FILE *file)
+    size_t strbuf_gzskipline(gzFile gz_file)
 
 Read a line but no more than len bytes
 
-    t_buf_pos strbuf_read(StrBuf *sbuf, FILE *file, t_buf_pos len)
-    t_buf_pos strbuf_gzread(StrBuf *sbuf, gzFile file, t_buf_pos len)
+    size_t strbuf_read(StrBuf *sbuf, FILE *file, size_t len)
+    size_t strbuf_gzread(StrBuf *sbuf, gzFile file, size_t len)
 
 Buffered reading
 
@@ -324,7 +324,7 @@ License
 Development
 ===========
 
-Todo: write unit tests
+short term goals: none - please suggest some!
 
 I like to hear about how you're using it, what bugs you've found and what
 features you'd like to see!  Contact me: Isaac Turner <turner.isaac@gmail>
