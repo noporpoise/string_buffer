@@ -227,31 +227,31 @@ Read a line but no more than len bytes
 
 Buffered reading
 
-        size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile gz_file, buffer_t *in);
-        size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in);
+    size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile gz_file, buffer_t *in);
+    size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in);
 
-        size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in);
-        size_t strbuf_skipline_buf(FILE* file, buffer_t *in);
+    size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in);
+    size_t strbuf_skipline_buf(FILE* file, buffer_t *in);
 
 Example of buffered reading:
 
-        gzFile gzf = gzopen("input.txt.gz", "r");
-        buffer_t *in = buffer_new();
-        StrBuf *line = strbuf_new();
+    gzFile gzf = gzopen("input.txt.gz", "r");
+    buffer_t *in = buffer_new(1024); // pass buffer size in bytes
+    StrBuf *line = strbuf_new();
 
-        while(strbuf_gzreadline_buf(line, gzf, in) > 0)
-        {
-          strbuf_chomp(line);
-          printf("read: %s\n", line->buff);
-        }
+    while(strbuf_gzreadline_buf(line, gzf, in) > 0)
+    {
+      strbuf_chomp(line);
+      printf("read: %s\n", line->buff);
+    }
 
-        strbuf_free(line);
-        buffer_free(in);
-        gzclose(gzf);
+    strbuf_free(line);
+    buffer_free(in);
+    gzclose(gzf);
 
 
-String functions
-----------------
+Trim characters
+---------------
 
 Trim whitespace characters from the start and end of a string
 
@@ -284,6 +284,56 @@ correctly.
     printf("Name: '%s'\n", sbuf->buff);
 
     strbuf_free(sbuf);
+
+Buffered input
+--------------
+
+buffered_input.h also provides generic buffered input functions
+
+    static inline buffer_t* buffer_new(size_t s)
+    static inline char buffer_init(buffer_t *b, size_t s)
+    void buffer_free(buffer_t *b)
+    static inline void buffer_ensure_capacity(buffer_t *buf, size_t s)
+    static inline void buffer_append_str(buffer_t *buf, char *str)
+    static inline void buffer_append_char(buffer_t *buf, char c)
+    void buffer_terminate(buffer_t *b)
+    void buffer_chomp(buffer_t *b)
+
+    // Standardized gzFile and FILE versions of stream functions
+
+    // Return number of bytes read (0 -> EOF; gzread2 returns -1 on error)
+    int gzread2(gz,buf,len)
+    size_t fread2(f,buf,len)
+
+    // Return pointer to buffer read into or NULL if EOF
+    char* gzgets2(gz,buf,len)
+    char* fgets2(f,buf,len)
+
+    // Writes the given null-terminated string to a stream, excluding the
+    // terminating null character.
+    // Returns a non-negative number, or –1 in case of error. 
+    int gzputs2(gz,buf)
+    int fputs2(f,buf)
+
+    // FILE readline
+    static inline size_t freadline(FILE* file, char **buf, size_t *len, size_t *size)
+    static inline size_t fskipline(FILE* file)
+
+    // FILE Buffered reading
+    static inline int fgetc_buf(FILE* file, buffer_t *in)
+    static inline char* fgets_buf(FILE* file, buffer_t *in, char* str, unsigned int len)
+    static inline size_t freadline_buf(FILE* file, buffer_t *in, char **buf, size_t *len, size_t *size)
+    static inline size_t fskipline_buf(FILE* file, buffer_t *in)
+
+    // gzFile readline
+    static inline size_t gzreadline(gzFile file, char **buf, size_t *len, size_t *size)
+    static inline size_t fskipline(FILE* file)
+
+    // gzFile Buffered reading
+    static inline int gzgetc_buf(gzFile file, buffer_t *in)
+    static inline char* gzgets_buf(gzFile file, buffer_t *in, char* str, unsigned int len)
+    static inline size_t gzreadline_buf(gzFile file, buffer_t *in, char **buf, size_t *len, size_t *size)
+    static inline size_t gzskipline_buf(gzFile* file, buffer_t *in)
 
 Other string functions
 ----------------------
