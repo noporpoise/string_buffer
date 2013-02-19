@@ -7,10 +7,10 @@ LIBFLAGS := -L. -lstrbuf -lz
 
 ifdef DEBUG
 	CFLAGS := $(CFLAGS) -O0 -DDEBUG=1 --debug -g -ggdb
-	OPT = -00
+	OPT = -O0
 else
 	CFLAGS := $(CFLAGS)
-	OPT = -03
+	OPT = -O3
 endif
 
 
