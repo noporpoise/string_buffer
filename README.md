@@ -333,7 +333,7 @@ buffered_input.h also provides generic buffered input functions
     static inline int gzgetc_buf(gzFile file, buffer_t *in)
     static inline char* gzgets_buf(gzFile file, buffer_t *in, char* str, unsigned int len)
     static inline size_t gzreadline_buf(gzFile file, buffer_t *in, char **buf, size_t *len, size_t *size)
-    static inline size_t gzskipline_buf(gzFile* file, buffer_t *in)
+    static inline size_t gzskipline_buf(gzFile file, buffer_t *in)
 
 Other string functions
 ----------------------
