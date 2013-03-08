@@ -136,6 +136,7 @@ The string can be a string within the given string buffer
 
 Get a copy of this StrBuf as a char array.
 Returns NULL if not enough memory.
+`strbuf_dup` is also provided as a shorthand.
 
     char* strbuf_as_str(const StrBuf* sbuf)
 
@@ -143,7 +144,8 @@ Add a character to the end of this StrBuf
 
     void strbuf_append_char(StrBuf* sbuf, const char txt)
 
-Copy a StrBuf to the end of this StrBuf
+Copy a StrBuf to the end of this StrBuf.
+`strbuf_append` is also provided as a shorthand.
 
     void strbuf_append_buff(StrBuf* dst, StrBuf* src)
 

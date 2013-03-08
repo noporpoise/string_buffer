@@ -44,8 +44,8 @@
 /*********************/
 
 // Bounds check when inserting (pos <= len are valid)
-void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
-                          const char* file, int line, const char* func)
+static void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
+                                 const char* file, int line, const char* func)
 {
   if(pos > sbuf->len)
   {
@@ -58,8 +58,8 @@ void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
 }
 
 // Bounds check when reading (pos < len are valid)
-void _bounds_check_read(const StrBuf* sbuf, size_t pos,
-                        const char* file, int line, const char* func)
+static void _bounds_check_read(const StrBuf* sbuf, size_t pos,
+                               const char* file, int line, const char* func)
 {
   if(pos >= sbuf->len)
   {
@@ -72,8 +72,8 @@ void _bounds_check_read(const StrBuf* sbuf, size_t pos,
 }
 
 // Bounds check when reading a range (start+len < strlen is valid)
-void _bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
-                              const char* file, int line, const char* func)
+static void _bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
+                                     const char* file, int line, const char* func)
 {
   if(start + len > sbuf->len)
   {
@@ -99,10 +99,10 @@ StrBuf* strbuf_init(size_t len)
 {
   size_t capacity = len < MIN_SIZE ? MIN_SIZE : ROUNDUP2POW(len+1);
 
-  StrBuf* sbuf = (StrBuf*) malloc(sizeof(StrBuf));
+  StrBuf* sbuf = malloc(sizeof(StrBuf));
   if(sbuf == NULL) return NULL;
 
-  sbuf->buff = malloc(capacity);
+  sbuf->buff = malloc(capacity * sizeof(char));
   sbuf->len = 0;
   sbuf->capacity = capacity;
 
@@ -153,10 +153,10 @@ StrBuf* strbuf_clone(const StrBuf* sbuf)
 // Returns NULL if not enough memory
 char* strbuf_as_str(const StrBuf* sbuf)
 {
-  char* cpy = (char*) malloc(sbuf->len+1);
+  char* cpy = malloc((sbuf->len + 1) * sizeof(char));
   if(cpy == NULL) return NULL;
 
-  memcpy(cpy, sbuf->buff, sbuf->len);
+  memcpy(cpy, sbuf->buff, sbuf->len * sizeof(char));
   cpy[sbuf->len] = '\0';
 
   return cpy;
@@ -194,7 +194,7 @@ void strbuf_set(StrBuf *sbuf, const char *str)
   strbuf_ensure_capacity(sbuf, len);
 
   // Use memmove to allow overlapping strings
-  memmove(sbuf->buff, str, sizeof(char) * len);
+  memmove(sbuf->buff, str, len * sizeof(char));
 
   sbuf->buff[len] = '\0';
   sbuf->len = len;
@@ -210,7 +210,7 @@ void strbuf_set(StrBuf *sbuf, const char *str)
 char strbuf_resize(StrBuf *sbuf, size_t new_len)
 {
   size_t capacity = ROUNDUP2POW(new_len+1);
-  char *new_buff = realloc(sbuf->buff, capacity);
+  char *new_buff = realloc(sbuf->buff, capacity * sizeof(char));
   if(new_buff == NULL) return 0;
 
   sbuf->buff = new_buff;
@@ -242,16 +242,11 @@ void strbuf_ensure_capacity(StrBuf *sbuf, size_t len)
 /* String functions */
 /********************/
 
-void strbuf_append_str(StrBuf* sbuf, const char* txt)
-{
-  strbuf_append_strn(sbuf, txt, strlen(txt));
-}
-
 void strbuf_append_strn(StrBuf* sbuf, const char* txt, size_t len)
 {
   // plus 1 for '\0'
   strbuf_ensure_capacity(sbuf, sbuf->len + len);
-  memcpy(sbuf->buff+sbuf->len, txt, len);
+  memcpy(sbuf->buff+sbuf->len, txt, len * sizeof(char));
   sbuf->len += len;
   sbuf->buff[sbuf->len] = '\0';
 }
@@ -262,12 +257,6 @@ void strbuf_append_char(StrBuf* sbuf, char c)
   strbuf_ensure_capacity(sbuf, sbuf->len + 1);
   sbuf->buff[(sbuf->len)++] = c;
   sbuf->buff[sbuf->len] = '\0';
-}
-
-// Copy a StrBuf to the end of this StrBuf
-void strbuf_append_buff(StrBuf* dst, const StrBuf* src)
-{
-  strbuf_append_strn(dst, src->buff, src->len);
 }
 
 // Remove \r and \n characters from the end of this StrBuf
@@ -289,7 +278,7 @@ char* strbuf_substr(const StrBuf *sbuf, size_t start, size_t len)
 {
   _bounds_check_read_range(sbuf, start, len, __FILE__, __LINE__, "strbuf_substr");
 
-  char* new_string = malloc(sizeof(char)*(len+1));
+  char* new_string = malloc((len+1) * sizeof(char));
   strncpy(new_string, sbuf->buff + start, len);
   new_string[len] = '\0';
 
@@ -322,7 +311,7 @@ void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
   strbuf_ensure_capacity(dst, dst_pos + len);
 
   // memmove instead of strncpy, as it can handle overlapping regions
-  memmove(dst->buff+dst_pos, src, (size_t)len);
+  memmove(dst->buff+dst_pos, src, (size_t)len * sizeof(char));
 
   if(dst_pos + len > dst->len)
   {
@@ -347,17 +336,17 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
   if(dst_pos < dst->len)
   {
     // Shift some characters up
-    memmove(insert + len, insert, (size_t)(dst->len - dst_pos));
-  
+    memmove(insert + len, insert, (size_t)(dst->len - dst_pos) * sizeof(char));
+
     if(src >= dst->buff && src < dst->buff + dst->len)
     {
       // src/dst strings point to the same string in memory
-      if(src < insert) memmove(insert, src, len);
-      else if(src > insert) memmove(insert, src+len, len);
+      if(src < insert) memmove(insert, src, len * sizeof(char));
+      else if(src > insert) memmove(insert, src+len, len * sizeof(char));
     }
-    else memmove(insert, src, (size_t)len);
+    else memmove(insert, src, (size_t)len * sizeof(char));
   }
-  else memmove(insert, src, (size_t)len);
+  else memmove(insert, src, (size_t)len * sizeof(char));
 
   // Update size
   dst->len += len;
@@ -570,7 +559,7 @@ void strbuf_trim(StrBuf *sbuf)
   if(start != 0)
   {
     sbuf->len -= start;
-    memmove(sbuf->buff, sbuf->buff+start, sbuf->len);
+    memmove(sbuf->buff, sbuf->buff+start, sbuf->len * sizeof(char));
     sbuf->buff[sbuf->len] = '\0';
   }
 }
@@ -587,7 +576,7 @@ void strbuf_ltrim(StrBuf *sbuf, const char* list)
   if(start != 0)
   {
     sbuf->len -= start;
-    memmove(sbuf->buff, sbuf->buff+start, sbuf->len);
+    memmove(sbuf->buff, sbuf->buff+start, sbuf->len * sizeof(char));
     sbuf->buff[sbuf->len] = '\0';
   }
 }
@@ -691,13 +680,13 @@ long string_split(const char* split, const char* txt, char*** result)
     }
     else
     {
-      arr = (char**) malloc(txt_len * sizeof(char*));
+      arr = malloc(txt_len * sizeof(char*));
     
       size_t i;
 
       for(i = 0; i < txt_len; i++)
       {
-        arr[i] = (char*) malloc(2 * sizeof(char));
+        arr[i] = malloc(2 * sizeof(char));
         arr[i][0] = txt[i];
         arr[i][1] = '\0';
       }
@@ -718,7 +707,7 @@ long string_split(const char* split, const char* txt, char*** result)
   }
 
   // Create return array
-  arr = (char**) malloc(count * sizeof(char*));
+  arr = malloc(count * sizeof(char*));
   
   count = 0;
   const char* last_position = txt;
@@ -727,7 +716,7 @@ long string_split(const char* split, const char* txt, char*** result)
   {
     long str_len = find - last_position;
 
-    arr[count] = (char*) malloc((str_len+1) * sizeof(char));
+    arr[count] = malloc((str_len+1) * sizeof(char));
     strncpy(arr[count], last_position, str_len);
     arr[count][str_len] = '\0';
     
@@ -737,7 +726,7 @@ long string_split(const char* split, const char* txt, char*** result)
 
   // Copy last item
   long str_len = txt + txt_len - last_position;
-  arr[count] = (char*) malloc((str_len+1) * sizeof(char));
+  arr[count] = malloc((str_len+1) * sizeof(char));
 
   if(count == 0) strcpy(arr[count], txt);
   else          strncpy(arr[count], last_position, str_len);

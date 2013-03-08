@@ -40,7 +40,14 @@ typedef struct
   size_t capacity; // buffer size - includes '\0' (size >= len+1)
 } StrBuf;
 
-#define strbuf_len(sb) ((sb)->len)
+#define strbuf_len(sb)  ((sb)->len)
+#define strbuf_dup(sb)  strbuf_as_str(sb)
+
+// Copy a StrBuf to the end of this StrBuf
+#define strbuf_append(s1,s2)      strbuf_append_strn(s1, (s2)->buff, (s2)->len)
+// Copy a character array to the end of this StrBuf
+#define strbuf_append_str(s1,s2)  strbuf_append_strn(s1, s2, strlen(s2))
+#define strbuf_append_buff(s1,s2) strbuf_append(s1,s2)
 
 //
 // Creation, reset, free and memory expansion
@@ -90,10 +97,6 @@ char* strbuf_as_str(const StrBuf* sbuf);
 
 // Add a character to the end of this StrBuf
 void strbuf_append_char(StrBuf* sbuf, char c);
-// Copy a StrBuf to the end of this StrBuf
-void strbuf_append_buff(StrBuf* dst, const StrBuf* src);
-// Copy a character array to the end of this StrBuf
-void strbuf_append_str(StrBuf* sbuf, const char* txt);
 // Copy N characters from a character array to the end of this StrBuf
 void strbuf_append_strn(StrBuf* sbuf, const char* txt, size_t len);
 
