@@ -117,31 +117,49 @@ void strbuf_to_lowercase(StrBuf *sbuf);
 
 // Copy a string to this StrBuf, overwriting any existing characters
 // Note: dst_pos + len can be longer the the current dst StrBuf
-void strbuf_copy(StrBuf* dst, size_t dst_pos,
-                 const char* src, size_t len);
+void strbuf_copy(StrBuf *dst, size_t dst_pos,
+                 const char *src, size_t len);
 
 // Insert: copy to a StrBuf, shifting any existing characters along
-void strbuf_insert(StrBuf* dst, size_t dst_pos,
-                   const char* src, size_t len);
+void strbuf_insert(StrBuf *dst, size_t dst_pos,
+                   const char *src, size_t len);
+
+// Overwrite dst_pos..(dst_pos+dst_len-1) with src_len chars from src
+// if dst_len != src_len, content to the right of dst_len is shifted
+// Example:
+//   strbuf_set(sbuf, "aaabbccc");
+//   char *data = "xxx";
+//   strbuf_overwrite(sbuf,3,2,data,strlen(data));
+//   // sbuf is now "aaaxxxccc"
+//   strbuf_overwrite(sbuf,3,2,"_",1);
+//   // sbuf is now "aaa_ccc"
+void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
+                      const char *src, size_t src_len);
+
+// Remove characters from the buffer
+//   strbuf_set(sbuf, "aaaBBccc");
+//   strbuf_delete(sbuf, 3, 2);
+//   // sbuf is now "aaaccc"
+void strbuf_delete(StrBuf *sbuf, size_t pos, size_t len);
 
 //
 // sprintf
 //
 
 // sprintf to a StrBuf (adds string terminator after sprint)
-int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...)
+int strbuf_sprintf(StrBuf *sbuf, const char *fmt, ...)
   __attribute__ ((format(printf, 2, 3)));
 
-int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char* fmt, ...)
+int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char *fmt, ...)
   __attribute__ ((format(printf, 3, 4)));
 
-int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
+int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char *fmt, va_list argptr)
   __attribute__ ((format(printf, 3, 0)));
 
 // sprintf without terminating character
 // Does not prematurely end the string if you sprintf within the string
 // (terminates string if sprintf to the end)
-int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
+int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char *fmt, ...)
   __attribute__ ((format(printf, 3, 4)));
 
 //

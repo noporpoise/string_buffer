@@ -863,6 +863,121 @@ void test_insert()
   SUITE_END();
 }
 
+void test_overwrite()
+{
+  SUITE_START("overwrite");
+  StrBuf *sbuf = strbuf_new();
+
+  strbuf_set(sbuf, "aaabbccc");
+
+  strbuf_overwrite(sbuf, 3, 2, "BBB", 3);
+  ASSERT(strcmp(sbuf->buff, "aaaBBBccc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_overwrite(sbuf, 3, 3, "_x", 1);
+  ASSERT(strcmp(sbuf->buff, "aaa_ccc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_set(sbuf, "abcdefghijklmnopqrstuvwxyz");
+  // replace de with abcdef
+  strbuf_overwrite(sbuf, 3, 2, sbuf->buff, 6);
+  ASSERT(strcmp(sbuf->buff, "abcabcdeffghijklmnopqrstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace abcdef with de
+  strbuf_overwrite(sbuf, 3, 6, sbuf->buff+6, 2);
+  ASSERT(strcmp(sbuf->buff, "abcdefghijklmnopqrstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // do nothing
+  strbuf_overwrite(sbuf, 3, 0, sbuf->buff+6, 0);
+  ASSERT(strcmp(sbuf->buff, "abcdefghijklmnopqrstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // delete b
+  strbuf_overwrite(sbuf, 1, 1, sbuf->buff, 0);
+  ASSERT(strcmp(sbuf->buff, "acdefghijklmnopqrstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // swap ghij with hi
+  strbuf_overwrite(sbuf, 5, 4, sbuf->buff+6, 2);
+  ASSERT(strcmp(sbuf->buff, "acdefhiklmnopqrstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace o with z
+  strbuf_overwrite(sbuf, 11, 1, sbuf->buff+22, 1);
+  ASSERT(strcmp(sbuf->buff, "acdefhiklmnzpqrstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace pq with stuv
+  strbuf_overwrite(sbuf, 12, 2, sbuf->buff+15, 4);
+  ASSERT(strcmp(sbuf->buff, "acdefhiklmnzstuvrstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace stuv with e
+  strbuf_overwrite(sbuf, 12, 4, sbuf->buff+3, 1);
+  ASSERT(strcmp(sbuf->buff, "acdefhiklmnzerstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace lmn with "A"
+  strbuf_overwrite(sbuf, 8, 3, "AB", 1);
+  ASSERT(strcmp(sbuf->buff, "acdefhikAzerstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace A with "XYZ"
+  strbuf_overwrite(sbuf, 8, 1, "XYZ", 3);
+  ASSERT(strcmp(sbuf->buff, "acdefhikXYZzerstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace XYZ with "Zz"
+  strbuf_overwrite(sbuf, 8, 3, sbuf->buff+10, 2);
+  ASSERT(strcmp(sbuf->buff, "acdefhikZzzerstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  // replace zer with "zz"
+  strbuf_overwrite(sbuf, 10, 3, sbuf->buff+9, 2);
+  ASSERT(strcmp(sbuf->buff, "acdefhikZzzzstuvwxyz") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_free(sbuf);
+  SUITE_END();
+}
+
+void test_delete()
+{
+  SUITE_START("delete");
+  StrBuf *sbuf = strbuf_new();
+
+  strbuf_set(sbuf, "aaaBBccc");
+
+  strbuf_delete(sbuf, 3, 2);
+  ASSERT(strcmp(sbuf->buff, "aaaccc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_delete(sbuf, 3, 0);
+  ASSERT(strcmp(sbuf->buff, "aaaccc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_delete(sbuf, 0, 0);
+  ASSERT(strcmp(sbuf->buff, "aaaccc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_delete(sbuf, 0, 1);
+  ASSERT(strcmp(sbuf->buff, "aaccc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_delete(sbuf, 4, 1);
+  ASSERT(strcmp(sbuf->buff, "aacc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_delete(sbuf, 4, 0);
+  ASSERT(strcmp(sbuf->buff, "aacc") == 0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_free(sbuf);
+  SUITE_END();
+}
+
 void test_sprintf()
 {
   SUITE_START("sprintf");
@@ -881,9 +996,10 @@ void test_sprintf()
                        "where it means %lu for some reason.  No other "
                        "profession is known to have its own dozen", 12, 13UL);
 
-  ASSERT(strcmp(sbuf->buff, "hi. A dozen is another way of saying 12, except for bakers "
-                            "where it means 13 for some reason.  No other "
-                            "profession is known to have its own dozen") == 0);
+  ASSERT(strcmp(sbuf->buff,
+                "hi. A dozen is another way of saying 12, except for bakers "
+                "where it means 13 for some reason.  No other "
+                "profession is known to have its own dozen") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_reset(sbuf);
@@ -1156,22 +1272,29 @@ int main()
   test_clone();
   test_reset();
   test_resize();
+
   test_get_set_char();
   test_set();
   test_as_str();
   test_append();
   test_chomp();
+  test_trim();
   test_reverse();
   test_substr();
   test_change_case();
+
   test_copy();
   test_insert();
+  test_overwrite();
+  test_delete();
+
   test_sprintf();
   test_sprintf_at();
   test_sprintf_noterm();
+
   test_read_gzfile();
   test_read_file();
-  test_trim();
+
   test_sscanf();
 
   printf("\n");

@@ -338,21 +338,97 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
     // Shift some characters up
     memmove(insert + len, insert, (size_t)(dst->len - dst_pos) * sizeof(char));
 
-    if(src >= dst->buff && src < dst->buff + dst->len)
+    if(src >= dst->buff && src < dst->buff + dst->capacity)
     {
       // src/dst strings point to the same string in memory
       if(src < insert) memmove(insert, src, len * sizeof(char));
       else if(src > insert) memmove(insert, src+len, len * sizeof(char));
     }
-    else memmove(insert, src, (size_t)len * sizeof(char));
+    else memmove(insert, src, len * sizeof(char));
   }
-  else memmove(insert, src, (size_t)len * sizeof(char));
+  else memmove(insert, src, len * sizeof(char));
 
   // Update size
   dst->len += len;
   dst->buff[dst->len] = '\0';
 }
 
+// Overwrite dst_pos..(dst_pos+dst_len-1) with src_len chars from src
+// if dst_len != src_len, content to the right of dst_len is shifted
+// Example:
+//   strbuf_set(sbuf, "aaabbccc");
+//   char *data = "xxx";
+//   strbuf_overwrite(sbuf,3,2,data,strlen(data));
+//   // sbuf is now "aaaxxxccc"
+//   strbuf_overwrite(sbuf,3,2,"_",1);
+//   // sbuf is now "aaa_ccc"
+void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
+                      const char *src, size_t src_len)
+{
+  _bounds_check_read_range(dst, dst_pos, dst_len, __FILE__, __LINE__,
+                           "strbuf_overwrite");
+
+  if(dst_len == src_len) strbuf_copy(dst, dst_pos, src, src_len);
+  size_t newlen = dst->len + src_len - dst_len;
+  if(src_len > dst_len) strbuf_ensure_capacity(dst, newlen);
+
+  if(src >= dst->buff && src < dst->buff + dst->capacity)
+  {
+    if(src_len < dst_len) {
+      // copy
+      memmove(dst->buff+dst_pos, src, src_len * sizeof(char));
+      // resize (shrink)
+      memmove(dst->buff+dst_pos+src_len, dst->buff+dst_pos+dst_len,
+              (dst->len-dst_pos-dst_len) * sizeof(char));
+    }
+    else
+    {
+      // Buffer is going to grow and src points to this buffer
+
+      // resize (grow)
+      memmove(dst->buff+dst_pos+src_len, dst->buff+dst_pos+dst_len,
+              (dst->len-dst_pos-dst_len) * sizeof(char));
+
+      char *tgt = dst->buff + dst_pos;
+      char *end = dst->buff + dst_pos + src_len;
+
+      if(src < tgt + dst_len)
+      {
+        size_t len = MIN((size_t)(end - src), src_len);
+        memmove(tgt, src, len);
+        tgt += len;
+        src += len;
+        src_len -= len;
+      }
+
+      if(src >= tgt + dst_len)
+      {
+        // shift to account for resizing
+        src += src_len - dst_len;
+        memmove(tgt, src, src_len);
+      }
+    }
+  }
+  else
+  {
+    // resize
+    memmove(dst->buff+dst_pos+src_len, dst->buff+dst_pos+dst_len,
+            (dst->len-dst_pos-dst_len) * sizeof(char));
+    // copy
+    memcpy(dst->buff+dst_pos, src, src_len * sizeof(char));
+  }
+
+  dst->len = newlen;
+  dst->buff[dst->len] = '\0';
+}
+
+void strbuf_delete(StrBuf *sbuf, size_t pos, size_t len)
+{
+  _bounds_check_read_range(sbuf, pos, len, __FILE__, __LINE__, "strbuf_delete");
+  memmove(sbuf->buff+pos, sbuf->buff+pos+len, sbuf->len-pos-len);
+  sbuf->len -= len;
+  sbuf->buff[sbuf->len] = '\0';
+}
 
 /**************************/
 /*         sprintf        */

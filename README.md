@@ -77,8 +77,8 @@ Test if the StrBuf contains 'hello' from index 12
       puts("world!\n")
 
 
-Functions
-=========
+Functions and structs
+=====================
 
     typedef struct
     {
@@ -186,6 +186,31 @@ Insert: copy to a StrBuf, shifting any existing characters along
 
     void strbuf_insert(StrBuf* dst, size_t dst_pos,
                        const char* src, size_t len)
+
+
+Overwrite `dst_pos..(dst_pos+dst_len-1)` with `src_len` chars from `src`
+If `dst_len != src_len`, content to the right of `dst_len` is shifted
+
+    void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
+                          const char *src, size_t src_len)
+
+    // Example:
+    strbuf_set(sbuf, "aaabbccc");
+    char *data = "xxx";
+    strbuf_overwrite(sbuf, 3, 2, data, strlen(data));
+    // sbuf is now "aaaxxxccc"
+    strbuf_overwrite(sbuf, 3, 2, "_", 1);
+    // sbuf is now "aaa_ccc"
+
+Remove characters from the buffer
+
+    void strbuf_delete(StrBuf *sbuf, size_t pos, size_t len)
+
+    // Example:
+    strbuf_set(sbuf, "aaaBBccc");
+    strbuf_delete(sbuf, 3, 2);
+    // sbuf is now "aaaccc"
+
 
 Formatted strings (sprintf)
 ---------------------------
