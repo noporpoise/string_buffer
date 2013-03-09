@@ -188,7 +188,7 @@ Insert: copy to a StrBuf, shifting any existing characters along
                        const char* src, size_t len)
 
 
-Overwrite `dst_pos..(dst_pos+dst_len-1)` with `src_len` chars from `src`
+Overwrite `dst_pos..(dst_pos+dst_len-1)` with `src_len` chars from `src`.
 If `dst_len != src_len`, content to the right of `dst_len` is shifted
 
     void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
@@ -199,7 +199,7 @@ If `dst_len != src_len`, content to the right of `dst_len` is shifted
     char *data = "xxx";
     strbuf_overwrite(sbuf, 3, 2, data, strlen(data));
     // sbuf is now "aaaxxxccc"
-    strbuf_overwrite(sbuf, 3, 2, "_", 1);
+    strbuf_overwrite(sbuf, 3, 3, "_", 1);
     // sbuf is now "aaa_ccc"
 
 Remove characters from the buffer
