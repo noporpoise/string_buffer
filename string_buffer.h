@@ -40,9 +40,10 @@ typedef struct
   size_t capacity; // buffer size - includes '\0' (size >= len+1)
 } StrBuf;
 
+// MACROS
+#define strbuf_new()    strbuf_init(256)
 #define strbuf_len(sb)  ((sb)->len)
 #define strbuf_dup(sb)  strbuf_as_str(sb)
-
 // Copy a StrBuf to the end of this StrBuf
 #define strbuf_append(s1,s2)      strbuf_append_strn(s1, (s2)->buff, (s2)->len)
 // Copy a character array to the end of this StrBuf
@@ -54,9 +55,13 @@ typedef struct
 //
 
 // Constructors
-StrBuf* strbuf_new();
 StrBuf* strbuf_init(size_t size);
 StrBuf* strbuf_create(const char* str);
+
+// Place a string buffer into existing memory. Example:
+//   StrBuf buf;
+//   strbuf_alloc(&buf, 100);
+StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity);
 
 // Destructors
 void strbuf_free(StrBuf* sbuf);

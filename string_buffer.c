@@ -89,29 +89,11 @@ static void _bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t le
 /*  Constructors/Destructors  */
 /******************************/
 
-// Return default length string buffer
-StrBuf* strbuf_new()
+StrBuf* strbuf_init(size_t capacity)
 {
-  return strbuf_init(256);
-}
-
-StrBuf* strbuf_init(size_t len)
-{
-  size_t capacity = len < MIN_SIZE ? MIN_SIZE : ROUNDUP2POW(len+1);
-
   StrBuf* sbuf = malloc(sizeof(StrBuf));
   if(sbuf == NULL) return NULL;
-
-  sbuf->buff = malloc(capacity * sizeof(char));
-  sbuf->len = 0;
-  sbuf->capacity = capacity;
-
-  if(sbuf->buff == NULL)
-  {
-    free(sbuf);
-    return NULL;
-  }
-
+  strbuf_alloc(sbuf, capacity);
   return sbuf;
 }
 
@@ -121,6 +103,16 @@ StrBuf* strbuf_create(const char* str)
   StrBuf* sbuf = strbuf_init(str_len);
   strcpy(sbuf->buff, str);
   sbuf->len = str_len;
+  return sbuf;
+}
+
+StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity)
+{
+  capacity = capacity < MIN_SIZE ? MIN_SIZE : ROUNDUP2POW(capacity+1);
+  sbuf->buff = malloc(capacity * sizeof(char));
+  sbuf->len = 0;
+  sbuf->capacity = capacity;
+  if(sbuf->buff == NULL) { free(sbuf); sbuf = NULL; }
   return sbuf;
 }
 

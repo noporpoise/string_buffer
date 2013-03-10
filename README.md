@@ -77,8 +77,11 @@ Test if the StrBuf contains 'hello' from index 12
       puts("world!\n")
 
 
-Functions and structs
-=====================
+API
+===
+
+Struct
+------
 
     typedef struct
     {
@@ -90,11 +93,19 @@ Functions and structs
 Creators, destructors etc.
 --------------------------
 
-Constructors
+Constructors.  Note capacity increases as needed.
 
     StrBuf* strbuf_new()
-    StrBuf* strbuf_init(const size_t size)
+    StrBuf* strbuf_init(const size_t capacity)
     StrBuf* strbuf_create(const char* str)
+
+Place a string buffer into existing memory
+
+    StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity)
+
+    // Example:
+    StrBuf buf;
+    strbuf_alloc(&buf, 100);
 
 Destructors
 
