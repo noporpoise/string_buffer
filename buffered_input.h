@@ -18,7 +18,9 @@ typedef struct
 } buffer_t;
 
 // Buffer functions
-#define ROUNDUP2POW(x) (0x1 << (64 - __builtin_clzl(x)))
+#ifndef ROUNDUP2POW
+  #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
+#endif
 
 static inline char buffer_init(buffer_t *b, size_t s)
 {

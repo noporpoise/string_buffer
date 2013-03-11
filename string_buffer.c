@@ -36,7 +36,7 @@
 #define MIN_SIZE 16
 
 #ifndef ROUNDUP2POW
-  #define ROUNDUP2POW(x) (0x1 << (64 - __builtin_clzl(x)))
+  #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
 #endif
 
 /*********************/
