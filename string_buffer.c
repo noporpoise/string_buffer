@@ -568,20 +568,28 @@ size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in)
   return gzskipline_buf(file, in);
 }
 
-char strbuf_readline_nonempty(StrBuf *line, FILE *fh)
+size_t strbuf_readline_nonempty(StrBuf *line, FILE *fh)
 {
-  while(strbuf_reset_readline(line, fh) > 0) {
-    strbuf_chomp(line);
-    if(line->len > 0) return 1;
+  size_t i, origlen = line->len;
+  while(strbuf_readline(line, fh) > 0) {
+    i = origlen;
+    while(i < line->len && (i == '\r' || i == '\n')) i++;
+    if(i < line->len) return line->len - origlen;
+    line->len = origlen;
+    line->buff[line->len-1] = '\0';
   }
   return 0;
 }
 
-char strbuf_gzreadline_nonempty(StrBuf *line, gzFile gz)
+size_t strbuf_gzreadline_nonempty(StrBuf *line, gzFile gz)
 {
-  while(strbuf_reset_gzreadline(line, gz) > 0) {
-    strbuf_chomp(line);
-    if(line->len > 0) return 1;
+  size_t i, origlen = line->len;
+  while(strbuf_gzreadline(line, gz) > 0) {
+    i = origlen;
+    while(i < line->len && (i == '\r' || i == '\n')) i++;
+    if(i < line->len) return line->len - origlen;
+    line->len = origlen;
+    line->buff[line->len-1] = '\0';
   }
   return 0;
 }
