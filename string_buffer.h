@@ -187,6 +187,10 @@ size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile gz_file, buffer_t *in);
 size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in);
 size_t strbuf_gzread(StrBuf *sbuf, gzFile gz_file, size_t len);
 
+// Read a line that has at least one character that is not \r or \n
+char strbuf_readline_nonempty(StrBuf *line, FILE *fh);
+char strbuf_gzreadline_nonempty(StrBuf *line, gzFile gz);
+
 //
 // String functions
 //

@@ -287,6 +287,10 @@ Example of buffered reading:
     buffer_free(in);
     gzclose(gzf);
 
+Read a line that has at least one character that is not `\r` or `\n`.
+
+    char strbuf_readline_nonempty(StrBuf *line, FILE *fh)
+    char strbuf_gzreadline_nonempty(StrBuf *line, gzFile gz)
 
 Trim characters
 ---------------

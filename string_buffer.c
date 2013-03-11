@@ -568,6 +568,24 @@ size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in)
   return gzskipline_buf(file, in);
 }
 
+char strbuf_readline_nonempty(StrBuf *line, FILE *fh)
+{
+  while(strbuf_reset_readline(line, fh) > 0) {
+    strbuf_chomp(line);
+    if(line->len > 0) return 1;
+  }
+  return 0;
+}
+
+char strbuf_gzreadline_nonempty(StrBuf *line, gzFile gz)
+{
+  while(strbuf_reset_gzreadline(line, gz) > 0) {
+    strbuf_chomp(line);
+    if(line->len > 0) return 1;
+  }
+  return 0;
+}
+
 #define _func_read(name,type_t,__read) \
   size_t name(StrBuf *sbuf, type_t file, size_t len)                           \
   {                                                                            \
