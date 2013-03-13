@@ -531,7 +531,7 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 // Reading a FILE
 size_t strbuf_readline(StrBuf *sbuf, FILE *file)
 {
-  return freadline(file, &sbuf->buff, &sbuf->len, &sbuf->capacity);
+  return freadline(file, &(sbuf->buff), &(sbuf->len), &(sbuf->capacity));
 }
 
 size_t strbuf_gzreadline(StrBuf *sbuf, gzFile file)
@@ -570,31 +570,24 @@ size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in)
   return gzskipline_buf(file, in);
 }
 
-size_t strbuf_readline_nonempty(StrBuf *line, FILE *fh)
-{
-  size_t i, origlen = line->len;
-  while(strbuf_readline(line, fh) > 0) {
-    i = origlen;
-    while(i < line->len && (i == '\r' || i == '\n')) i++;
-    if(i < line->len) return line->len - origlen;
-    line->len = origlen;
-    line->buff[line->len-1] = '\0';
+#define _func_read_nonempty(name,type_t,__readline)                            \
+  size_t name(StrBuf *line, type_t fh)                                         \
+  {                                                                            \
+    size_t i, origlen = line->len;                                             \
+    while(__readline(line, fh) > 0) {                                          \
+      i = origlen;                                                             \
+      while(i < line->len && (line->buff[i] == '\r' || line->buff[i] == '\n')) \
+        i++;                                                                   \
+      if(i < line->len) return line->len - origlen;                            \
+      line->len = origlen;                                                     \
+      line->buff[line->len] = '\0';                                            \
+    }                                                                          \
+    return 0;                                                                  \
   }
-  return 0;
-}
 
-size_t strbuf_gzreadline_nonempty(StrBuf *line, gzFile gz)
-{
-  size_t i, origlen = line->len;
-  while(strbuf_gzreadline(line, gz) > 0) {
-    i = origlen;
-    while(i < line->len && (i == '\r' || i == '\n')) i++;
-    if(i < line->len) return line->len - origlen;
-    line->len = origlen;
-    line->buff[line->len-1] = '\0';
-  }
-  return 0;
-}
+_func_read_nonempty(strbuf_readline_nonempty,FILE*,strbuf_readline)
+_func_read_nonempty(strbuf_gzreadline_nonempty,gzFile,strbuf_gzreadline)
+
 
 #define _func_read(name,type_t,__read) \
   size_t name(StrBuf *sbuf, type_t file, size_t len)                           \

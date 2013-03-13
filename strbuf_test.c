@@ -1139,6 +1139,66 @@ void test_read_file()
   SUITE_END();
 }
 
+void test_read_nonempty()
+{
+  SUITE_START("read nonempty");
+
+  FILE *fh = fopen(tmp_file1, "w");
+  if(fh == NULL) die("Cannot write tmp output file: %s", tmp_file1);
+  fprintf(fh, "hi\n\r\n\r\n"
+              "bye\nx\ny\n"
+              "\n\n\nz\n\n\n");
+  fclose(fh);
+
+  fh = fopen(tmp_file1, "r");
+  if(fh == NULL) die("Cannot read tmp output file: %s", tmp_file1);
+
+  StrBuf *sbuf = strbuf_new();
+  ASSERT(strbuf_readline_nonempty(sbuf, fh));
+  strbuf_chomp(sbuf);
+  ASSERT(strcmp(sbuf->buff,"hi")==0);
+
+  strbuf_reset(sbuf);
+  ASSERT(strbuf_readline_nonempty(sbuf, fh));
+  strbuf_chomp(sbuf);
+  ASSERT(strcmp(sbuf->buff,"bye")==0);
+
+  strbuf_reset(sbuf);
+  ASSERT(strbuf_readline(sbuf, fh));
+  strbuf_chomp(sbuf);
+  ASSERT(strcmp(sbuf->buff,"x")==0);
+
+  strbuf_reset(sbuf);
+  ASSERT(strbuf_readline_nonempty(sbuf, fh));
+  strbuf_chomp(sbuf);
+  ASSERT(strcmp(sbuf->buff,"y")==0);
+  ASSERT_VALID(sbuf);
+
+  strbuf_reset(sbuf);
+  ASSERT(strbuf_readline(sbuf, fh));
+  strbuf_chomp(sbuf);
+  ASSERT(strcmp(sbuf->buff,"")==0);
+
+  strbuf_reset(sbuf);
+  ASSERT(strbuf_readline_nonempty(sbuf, fh));
+  strbuf_chomp(sbuf);
+  ASSERT(strcmp(sbuf->buff,"z")==0);
+
+  strbuf_reset(sbuf);
+  ASSERT(strbuf_readline_nonempty(sbuf, fh) == 0);
+  ASSERT(sbuf->len == 0);
+
+  strbuf_reset(sbuf);
+  ASSERT(strbuf_readline(sbuf,fh) == 0);
+  ASSERT(sbuf->len == 0);
+
+  ASSERT_VALID(sbuf);
+  strbuf_free(sbuf);
+  fclose(fh);
+
+  SUITE_END();
+}
+
 // test trim, ltrim, rtrim
 // trim removes whitespace (isspace(c)) from both sides of a str
 void _test_trim(const char *str, const char *ans)
@@ -1294,6 +1354,7 @@ int main()
 
   test_read_gzfile();
   test_read_file();
+  test_read_nonempty();
 
   test_sscanf();
 
