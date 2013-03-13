@@ -50,7 +50,7 @@ static void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
   if(pos > sbuf->len)
   {
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
-                    "[index: %zd, num_of_bits: %zd]\n",
+                    "[index: %zu, num_of_bits: %zu]\n",
             file, line, func, pos, sbuf->len);
     errno = EDOM;
     exit(EXIT_FAILURE);
@@ -64,7 +64,7 @@ static void _bounds_check_read(const StrBuf* sbuf, size_t pos,
   if(pos >= sbuf->len)
   {
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
-                    "[index: %zd, num_of_bits: %zd]\n",
+                    "[index: %zu, num_of_bits: %zu]\n",
             file, line, func, pos, sbuf->len);
     errno = EDOM;
     exit(EXIT_FAILURE);
@@ -78,7 +78,7 @@ static void _bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t le
   if(start + len > sbuf->len)
   {
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
-                    "[start: %zd; length: %zd; strlen: %zd]\n",
+                    "[start: %zu; length: %zu; strlen: %zu]\n",
             file, line, func, start, len, sbuf->len);
     errno = EDOM;
     exit(EXIT_FAILURE);
@@ -93,14 +93,14 @@ StrBuf* strbuf_init(size_t capacity)
 {
   StrBuf* sbuf = malloc(sizeof(StrBuf));
   if(sbuf == NULL) return NULL;
-  strbuf_alloc(sbuf, capacity);
-  return sbuf;
+  return strbuf_alloc(sbuf, capacity);
 }
 
 StrBuf* strbuf_create(const char* str)
 {
   size_t str_len = strlen(str);
   StrBuf* sbuf = strbuf_init(str_len);
+  if(sbuf == NULL) return sbuf;
   strcpy(sbuf->buff, str);
   sbuf->len = str_len;
   return sbuf;
@@ -112,7 +112,7 @@ StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity)
   sbuf->buff = malloc(capacity * sizeof(char));
   sbuf->len = 0;
   sbuf->capacity = capacity;
-  if(sbuf->buff == NULL) { free(sbuf); sbuf = NULL; }
+  if(sbuf->buff == NULL) { free(sbuf); return NULL; }
   return sbuf;
 }
 
@@ -132,12 +132,10 @@ StrBuf* strbuf_clone(const StrBuf* sbuf)
 {
   // One byte for the string end / null char \0
   StrBuf* sbuf_cpy = strbuf_init(sbuf->len);
-  
+  if(sbuf_cpy == NULL) return NULL;
   strcpy(sbuf_cpy->buff, sbuf->buff);
   sbuf_cpy->buff[sbuf->len] = '\0';
-
   sbuf_cpy->len = sbuf->len;
-  
   return sbuf_cpy;
 }
 
@@ -224,8 +222,8 @@ void strbuf_ensure_capacity(StrBuf *sbuf, size_t len)
   if(sbuf->capacity <= len+1 && !strbuf_resize(sbuf, len))
   {
     fprintf(stderr, "%s:%i:Error: strbuf_ensure_capacity couldn't be resize "
-                    "buffer. [requested %zd bytes; StrBuf begins '%s']",
-            __FILE__, __LINE__, len, strbuf_substr(sbuf, 0, 5));
+                    "buffer. [requested %zu bytes; currently %zu bytes]",
+            __FILE__, __LINE__, len, sbuf->len);
     exit(EXIT_FAILURE);
   }
 }
@@ -360,6 +358,7 @@ void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
   _bounds_check_read_range(dst, dst_pos, dst_len, __FILE__, __LINE__,
                            "strbuf_overwrite");
 
+  if(src == NULL) return;
   if(dst_len == src_len) strbuf_copy(dst, dst_pos, src, src_len);
   size_t newlen = dst->len + src_len - dst_len;
   if(src_len > dst_len) strbuf_ensure_capacity(dst, newlen);
@@ -432,7 +431,10 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
 
   // Length of remaining buffer
   size_t buf_len = (size_t)(sbuf->capacity - pos);
-  if(buf_len == 0) strbuf_resize(sbuf, sbuf->capacity << 1);
+  if(buf_len == 0 && !strbuf_resize(sbuf, sbuf->capacity << 1)) {
+    fprintf(stderr, "%s:%i:Error: Out of memory\n", __FILE__, __LINE__);
+    exit(EXIT_FAILURE);
+  }
 
   // Make a copy of the list of args incase we need to resize buff and try again
   va_list argptr_cpy;

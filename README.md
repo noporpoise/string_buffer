@@ -107,6 +107,9 @@ Place a string buffer into existing memory
     StrBuf buf;
     strbuf_alloc(&buf, 100);
 
+    // free malloc'd memory
+    free(buf->seq.buff);
+
 Destructors
 
     void strbuf_free(StrBuf* sbuf)
