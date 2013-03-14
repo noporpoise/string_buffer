@@ -176,20 +176,6 @@ void strbuf_set_char(StrBuf *sbuf, size_t index, char c)
   }
 }
 
-// Set string buffer to contain a given string
-// The string can be a string within the given string buffer
-void strbuf_set(StrBuf *sbuf, const char *str)
-{
-  size_t len = strlen(str);
-  strbuf_ensure_capacity(sbuf, len);
-
-  // Use memmove to allow overlapping strings
-  memmove(sbuf->buff, str, len * sizeof(char));
-
-  sbuf->buff[len] = '\0';
-  sbuf->len = len;
-}
-
 /******************************/
 /*  Resize Buffer Functions   */
 /******************************/
@@ -221,10 +207,32 @@ void strbuf_ensure_capacity(StrBuf *sbuf, size_t len)
 {
   if(sbuf->capacity <= len+1 && !strbuf_resize(sbuf, len))
   {
-    fprintf(stderr, "%s:%i:Error: strbuf_ensure_capacity couldn't be resize "
-                    "buffer. [requested %zu bytes; currently %zu bytes]",
+    fprintf(stderr, "%s:%i:Error: strbuf_ensure_capacity couldn't resize "
+                    "buffer. [requested %zu bytes; size %zu bytes]",
             __FILE__, __LINE__, len, sbuf->len);
     exit(EXIT_FAILURE);
+  }
+}
+
+static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t len,
+                                        const char **ptr)
+{
+  if(sbuf->capacity <= len+1)
+  {
+    char *oldbuf = sbuf->buff;
+
+    if(!strbuf_resize(sbuf, len))
+    {
+      fprintf(stderr, "%s:%i:Error: _ensure_capacity_update_ptr couldn't resize "
+                      "buffer. [requested %zu bytes; size %zu bytes]",
+              __FILE__, __LINE__, len, sbuf->len);
+      exit(EXIT_FAILURE);
+    }
+
+    // ptr may have pointed to sbuf, which has now moved
+    if(oldbuf <= *ptr && *ptr < oldbuf + sbuf->len) {
+      *ptr = sbuf->buff + (*ptr - oldbuf);
+    }
   }
 }
 
@@ -232,11 +240,26 @@ void strbuf_ensure_capacity(StrBuf *sbuf, size_t len)
 /* String functions */
 /********************/
 
-void strbuf_append_strn(StrBuf* sbuf, const char* txt, size_t len)
+// Set string buffer to contain a given string
+// The string can be a string within the given string buffer
+void strbuf_set(StrBuf *sbuf, const char *str)
+{
+  size_t len = strlen(str);
+  _ensure_capacity_update_ptr(sbuf, len, &str);
+
+  // Use memmove to allow overlapping strings
+  memmove(sbuf->buff, str, len * sizeof(char));
+
+  sbuf->buff[len] = '\0';
+  sbuf->len = len;
+}
+
+// src may point to this buffer
+void strbuf_append_strn(StrBuf* sbuf, const char* src, size_t len)
 {
   // plus 1 for '\0'
-  strbuf_ensure_capacity(sbuf, sbuf->len + len);
-  memcpy(sbuf->buff+sbuf->len, txt, len * sizeof(char));
+  _ensure_capacity_update_ptr(sbuf, sbuf->len + len, &src);
+  memcpy(sbuf->buff+sbuf->len, src, len * sizeof(char));
   sbuf->len += len;
   sbuf->buff[sbuf->len] = '\0';
 }
@@ -245,7 +268,7 @@ void strbuf_append_char(StrBuf* sbuf, char c)
 {
   // Adding one character
   strbuf_ensure_capacity(sbuf, sbuf->len + 1);
-  sbuf->buff[(sbuf->len)++] = c;
+  sbuf->buff[sbuf->len++] = c;
   sbuf->buff[sbuf->len] = '\0';
 }
 
@@ -298,10 +321,11 @@ void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
   _bounds_check_insert(dst, dst_pos, __FILE__, __LINE__, "strbuf_copy");
 
   // Check if dst buffer can handle string
-  strbuf_ensure_capacity(dst, dst_pos + len);
+  // src may have pointed to dst, which has now moved
+  _ensure_capacity_update_ptr(dst, dst_pos + len, &src);
 
   // memmove instead of strncpy, as it can handle overlapping regions
-  memmove(dst->buff+dst_pos, src, (size_t)len * sizeof(char));
+  memmove(dst->buff+dst_pos, src, len * sizeof(char));
 
   if(dst_pos + len > dst->len)
   {
@@ -319,14 +343,16 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
   _bounds_check_insert(dst, dst_pos, __FILE__, __LINE__, "strbuf_insert");
 
   // Check if dst buffer can handle string plus \0
-  strbuf_ensure_capacity(dst, dst->len + len);
+  // src may have pointed to dst, which has now moved
+  _ensure_capacity_update_ptr(dst, dst_pos + len, &src);
+
   char *insert = dst->buff+dst_pos;
 
   // dst_pos could be at the end (== dst->len)
   if(dst_pos < dst->len)
   {
     // Shift some characters up
-    memmove(insert + len, insert, (size_t)(dst->len - dst_pos) * sizeof(char));
+    memmove(insert + len, insert, (dst->len - dst_pos) * sizeof(char));
 
     if(src >= dst->buff && src < dst->buff + dst->capacity)
     {
@@ -361,7 +387,8 @@ void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
   if(src == NULL) return;
   if(dst_len == src_len) strbuf_copy(dst, dst_pos, src, src_len);
   size_t newlen = dst->len + src_len - dst_len;
-  if(src_len > dst_len) strbuf_ensure_capacity(dst, newlen);
+
+  _ensure_capacity_update_ptr(dst, newlen, &src);
 
   if(src >= dst->buff && src < dst->buff + dst->capacity)
   {
@@ -430,7 +457,7 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
   _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_vsprintf");
 
   // Length of remaining buffer
-  size_t buf_len = (size_t)(sbuf->capacity - pos);
+  size_t buf_len = sbuf->capacity - pos;
   if(buf_len == 0 && !strbuf_resize(sbuf, sbuf->capacity << 1)) {
     fprintf(stderr, "%s:%i:Error: Out of memory\n", __FILE__, __LINE__);
     exit(EXIT_FAILURE);

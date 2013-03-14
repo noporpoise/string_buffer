@@ -725,15 +725,15 @@ void test_change_case()
   _test_change_case("");
   _test_change_case("asdfasdf");
   _test_change_case("asdf");
-  _test_change_case("ASDFASDF:. asdfasdf \nasdfasdf'aougyqvo23=-=12#ßΩ");
+  _test_change_case("ASDFASDF:. asdfasdf \nasdfasdf'aougyqvo23=-=12#");
 
   SUITE_END();
 }
 
 
-void _test_copy(StrBuf *sbuf, size_t pos, size_t len, const char *from)
+void _test_copy(StrBuf *sbuf, size_t pos, const char *from, size_t len)
 {
-  char *frmcpy = (from == NULL ? calloc(1,1) : strdup(from));
+  char *frmcpy = strdup(from);
   size_t orig_len = sbuf->len;
 
   char *orig = strbuf_as_str(sbuf);
@@ -757,37 +757,36 @@ void test_copy()
   SUITE_START("copy");
   StrBuf *sbuf = strbuf_create("");
 
-  _test_copy(sbuf, 0, 0, NULL);
-  _test_copy(sbuf, 0, 0, "");
-  _test_copy(sbuf, 0, 0, "asdf");
-  _test_copy(sbuf, 0, 1, "asdf");
+  _test_copy(sbuf, 0, "", 0);
+  _test_copy(sbuf, 0, "asdf", 0);
+  _test_copy(sbuf, 0, "asdf", 1);
 
   strbuf_set(sbuf, "");
-  _test_copy(sbuf, 0, 4, "asdf");
+  _test_copy(sbuf, 0, "asdf", 4);
 
   int i, j;
   for(i = 0; i <= 4; i++)
   {
     strbuf_set(sbuf, "asdf");
-    _test_copy(sbuf, i, 2, "asdf");
+    _test_copy(sbuf, i, "asdf", 2);
     strbuf_set(sbuf, "asdf");
-    _test_copy(sbuf, i, 4, "asdf");
+    _test_copy(sbuf, i, "asdf", 4);
   }
 
   strbuf_set(sbuf, "asdfasdfasdf");
-  _test_copy(sbuf, 8, 2, "df");
+  _test_copy(sbuf, 8, "df", 2);
   strbuf_set(sbuf, "asdfasdfasdf");
-  _test_copy(sbuf, 8, 0, "");
+  _test_copy(sbuf, 8, "", 0);
 
   strbuf_set(sbuf, "asdfasdfasdf");
-  _test_copy(sbuf, 8, sbuf->len, sbuf->buff);
+  _test_copy(sbuf, 8, sbuf->buff, sbuf->len);
 
   for(i = 0; i <= 4; i++)
   {
     for(j = 0; j <= 4; j++)
     {
       strbuf_set(sbuf, "asdf");
-      _test_copy(sbuf, i, j, sbuf->buff);
+      _test_copy(sbuf, i, sbuf->buff, j);
     }
   }
 
@@ -983,9 +982,12 @@ void test_sprintf()
   SUITE_START("sprintf");
   StrBuf *sbuf = strbuf_new();
 
+  // although valid, GCC complains about formatted strings of length 0
+  #ifdef __clang__
   strbuf_sprintf(sbuf, "");
   ASSERT(strcmp(sbuf->buff, "") == 0);
   ASSERT_VALID(sbuf);
+  #endif
 
   strbuf_sprintf(sbuf, "hi. ");
   ASSERT(strcmp(sbuf->buff, "hi. ") == 0);
@@ -1021,9 +1023,12 @@ void test_sprintf_at()
   SUITE_START("sprintf_at");
   StrBuf *sbuf = strbuf_new();
 
+  // although valid, GCC complains about formatted strings of length 0
+  #ifdef __clang__
   strbuf_sprintf_at(sbuf, 0, "");
   ASSERT(strcmp(sbuf->buff, "") == 0);
   ASSERT_VALID(sbuf);
+  #endif
 
   strbuf_sprintf_at(sbuf, 0, "hi. ");
   ASSERT(strcmp(sbuf->buff, "hi. ") == 0);
@@ -1050,9 +1055,12 @@ void test_sprintf_noterm()
   SUITE_START("sprintf_noterm");
   StrBuf *sbuf = strbuf_new();
 
+  // although valid, GCC complains about formatted strings of length 0
+  #ifdef __clang__
   strbuf_sprintf_noterm(sbuf, 0, "");
   ASSERT(strcmp(sbuf->buff, "") == 0);
   ASSERT_VALID(sbuf);
+  #endif
 
   strbuf_sprintf_noterm(sbuf, 0, "hi. ");
   ASSERT(strcmp(sbuf->buff, "hi. ") == 0);
@@ -1070,13 +1078,16 @@ void test_sprintf_noterm()
   ASSERT(strcmp(sbuf->buff, "woot moo 6excitement 12 ?") == 0);
   ASSERT_VALID(sbuf);
 
+  // although valid, GCC complains about formatted strings of length 0
+  #ifdef __clang__
   StrBuf *sbuf2 = strbuf_clone(sbuf);
   strbuf_sprintf_noterm(sbuf, 5, "");
   ASSERT(strcmp(sbuf->buff, sbuf2->buff) == 0);
   ASSERT_VALID(sbuf2);
+  strbuf_free(sbuf2);
+  #endif
 
   strbuf_free(sbuf);
-  strbuf_free(sbuf2);
   SUITE_END();
 }
 
