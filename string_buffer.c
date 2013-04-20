@@ -194,7 +194,7 @@ char strbuf_resize(StrBuf *sbuf, size_t new_len)
 
   if(sbuf->len > new_len)
   {
-    // Buffer was shrunk - add null byte
+    // Buffer was shrunk - re-add null byte
     sbuf->len = new_len;
     sbuf->buff[sbuf->len] = '\0';
   }
@@ -234,6 +234,19 @@ static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t len,
       *ptr = sbuf->buff + (*ptr - oldbuf);
     }
   }
+}
+
+void strbuf_shrink(StrBuf *sbuf, size_t new_len)
+{
+  if(new_len > sbuf->len) {
+    fprintf(stderr, "%s:%i:Error: strbuf_shrink arg longer than length "
+                    "[new_len: %zu; cur_len: %zu]",
+            __FILE__, __LINE__, new_len, sbuf->len);
+    exit(EXIT_FAILURE);
+  }
+
+  sbuf->len = new_len;
+  sbuf->buff[sbuf->len] = '\0';
 }
 
 /********************/

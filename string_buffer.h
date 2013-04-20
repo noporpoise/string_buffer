@@ -79,9 +79,11 @@ void strbuf_reset(StrBuf* sbuf);
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
 void strbuf_ensure_capacity(StrBuf *sbuf, size_t len);
 
-// Resize the buffer to have capacity to hold a string of length new_len
-// (+ a null terminating character).  Can also be used to downsize the buffer's
-// memory usage.  Returns 1 on success, 0 on failure.
+// Shorten a string
+void strbuf_shrink(StrBuf *sbuf, size_t new_len);
+
+// Change how much memory is used to hold the buffer.  Can be used to grow or
+// shrink buffer size.  Always calls realloc. Returns 1 on success, 0 on failure.
 char strbuf_resize(StrBuf *sbuf, size_t new_size);
 
 //
