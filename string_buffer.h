@@ -77,7 +77,7 @@ void strbuf_reset(StrBuf* sbuf);
 //
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
-void strbuf_ensure_capacity(StrBuf *sbuf, size_t len);
+void strbuf_ensure_capacity(StrBuf *sbuf, size_t size);
 
 // Shorten a string
 void strbuf_shrink(StrBuf *sbuf, size_t new_len);

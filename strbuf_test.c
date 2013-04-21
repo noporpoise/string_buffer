@@ -46,9 +46,9 @@ const char tmp_gzfile2[] = "tmp.strbuf.002.txt.gz";
 
 char *suite_name;
 char suite_pass;
-int suites_run = 0, suites_failed = 0, suites_empty = 0;
-int tests_passed = 0, tests_failed = 0;
-int total_tests_passed = 0, total_tests_failed = 0;
+size_t suites_run = 0, suites_failed = 0, suites_empty = 0;
+size_t tests_passed = 0, tests_failed = 0;
+size_t total_tests_passed = 0, total_tests_failed = 0;
 
 #define QUOTE(str) #str
 
@@ -65,22 +65,22 @@ int total_tests_passed = 0, total_tests_failed = 0;
 
 #define SUITE_END()  do { \
     printf("Testing %s ", suite_name);                                         \
-    int suite_i, tests_in_suite = tests_passed+tests_failed;                   \
+    size_t suite_i, tests_in_suite = tests_passed+tests_failed;                \
     for(suite_i = strlen(suite_name); suite_i<80-9-5; suite_i++) printf(".");  \
     printf("%s", suite_pass ? " pass" : " fail");                              \
     if(tests_in_suite == 0) { printf(" (empty)\n"); suites_empty++;}           \
     else if(tests_passed == 0 || tests_failed == 0) {                          \
-      printf(" (%i)\n", tests_in_suite);                                       \
-    } else printf(" [%i/%i]\n", tests_passed, tests_in_suite);                 \
+      printf(" (%zu)\n", tests_in_suite);                                      \
+    } else printf(" [%zu/%zu]\n", tests_passed, tests_in_suite);               \
     if(!suite_pass) suites_failed++;                                           \
     total_tests_failed += tests_failed;                                        \
     total_tests_passed += tests_passed;                                        \
   } while(0)
 
 #define TEST_STATS()  do { \
-    printf(" %i / %i suites failed\n", suites_failed, suites_run);             \
-    printf(" %i / %i suites empty\n", suites_empty, suites_run);               \
-    printf(" %i / %i tests failed\n", total_tests_failed,                      \
+    printf(" %zu / %zu suites failed\n", suites_failed, suites_run);           \
+    printf(" %zu / %zu suites empty\n", suites_empty, suites_run);             \
+    printf(" %zu / %zu tests failed\n", total_tests_failed,                    \
            total_tests_passed+total_tests_failed);                             \
   } while(0)
 
@@ -345,9 +345,9 @@ void test_buffered_reading()
 
   // gets
   fgets2(file1, st1->text, st1->size);
-  fgets_buf(file2, fbuf, st2->text, st2->size);
+  fgets_buf(file2, fbuf, st2->text, (int)st2->size);
   gzgets2(gzfile1, st3->text, st3->size);
-  gzgets_buf(gzfile2, gzbuf, st4->text, st4->size);
+  gzgets_buf(gzfile2, gzbuf, st4->text, (int)st4->size);
 
   ASSERT(strcmp(st1->text, "That's all folks!") == 0);
   ASSERT(strcmp(st2->text, "That's all folks!") == 0);

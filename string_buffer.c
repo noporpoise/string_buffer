@@ -203,34 +203,34 @@ char strbuf_resize(StrBuf *sbuf, size_t new_len)
 }
 
 // Ensure capacity for len characters plus '\0' character
-void strbuf_ensure_capacity(StrBuf *sbuf, size_t len)
+void strbuf_ensure_capacity(StrBuf *sbuf, size_t size)
 {
-  if(sbuf->capacity <= len+1 && !strbuf_resize(sbuf, len))
+  if(sbuf->capacity <= size+1 && !strbuf_resize(sbuf, size))
   {
     fprintf(stderr, "%s:%i:Error: strbuf_ensure_capacity couldn't resize "
-                    "buffer. [requested %zu bytes; size %zu bytes]",
-            __FILE__, __LINE__, len, sbuf->len);
+                    "buffer. [requested %zu bytes; capacity: %zu bytes]\n",
+            __FILE__, __LINE__, size, sbuf->capacity);
     exit(EXIT_FAILURE);
   }
 }
 
-static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t len,
+static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t size,
                                         const char **ptr)
 {
-  if(sbuf->capacity <= len+1)
+  if(sbuf->capacity <= size+1)
   {
     char *oldbuf = sbuf->buff;
 
-    if(!strbuf_resize(sbuf, len))
+    if(!strbuf_resize(sbuf, size))
     {
       fprintf(stderr, "%s:%i:Error: _ensure_capacity_update_ptr couldn't resize "
-                      "buffer. [requested %zu bytes; size %zu bytes]",
-              __FILE__, __LINE__, len, sbuf->len);
+                      "buffer. [requested %zu bytes; capacity: %zu bytes]\n",
+              __FILE__, __LINE__, size, sbuf->capacity);
       exit(EXIT_FAILURE);
     }
 
     // ptr may have pointed to sbuf, which has now moved
-    if(oldbuf <= *ptr && *ptr < oldbuf + sbuf->len) {
+    if(*ptr >= oldbuf && *ptr < oldbuf + sbuf->capacity) {
       *ptr = sbuf->buff + (*ptr - oldbuf);
     }
   }
@@ -240,7 +240,7 @@ void strbuf_shrink(StrBuf *sbuf, size_t new_len)
 {
   if(new_len > sbuf->len) {
     fprintf(stderr, "%s:%i:Error: strbuf_shrink arg longer than length "
-                    "[new_len: %zu; cur_len: %zu]",
+                    "[new_len: %zu; cur_len: %zu]\n",
             __FILE__, __LINE__, new_len, sbuf->len);
     exit(EXIT_FAILURE);
   }
@@ -355,8 +355,9 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 
   _bounds_check_insert(dst, dst_pos, __FILE__, __LINE__, "strbuf_insert");
 
-  // Check if dst buffer can handle string plus \0
-  // src may have pointed to dst, which has now moved
+  // Check if dst buffer has capacity for inserted string plus \0
+  // src may have pointed to dst, which will be moved in realloc when
+  // calling ensure capacity
   _ensure_capacity_update_ptr(dst, dst_pos + len, &src);
 
   char *insert = dst->buff+dst_pos;
