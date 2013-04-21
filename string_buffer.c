@@ -219,6 +219,7 @@ static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t size,
 {
   if(sbuf->capacity <= size+1)
   {
+    size_t oldcap = sbuf->capacity;
     char *oldbuf = sbuf->buff;
 
     if(!strbuf_resize(sbuf, size))
@@ -230,7 +231,7 @@ static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t size,
     }
 
     // ptr may have pointed to sbuf, which has now moved
-    if(*ptr >= oldbuf && *ptr < oldbuf + sbuf->capacity) {
+    if(*ptr >= oldbuf && *ptr < oldbuf + oldcap) {
       *ptr = sbuf->buff + (*ptr - oldbuf);
     }
   }
