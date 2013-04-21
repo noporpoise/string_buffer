@@ -335,7 +335,8 @@ void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 
   // Check if dst buffer can handle string
   // src may have pointed to dst, which has now moved
-  _ensure_capacity_update_ptr(dst, dst_pos + len, &src);
+  size_t newlen = MAX(dst_pos + len, dst->len);
+  _ensure_capacity_update_ptr(dst, newlen, &src);
 
   // memmove instead of strncpy, as it can handle overlapping regions
   memmove(dst->buff+dst_pos, src, len * sizeof(char));
@@ -358,7 +359,7 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
   // Check if dst buffer has capacity for inserted string plus \0
   // src may have pointed to dst, which will be moved in realloc when
   // calling ensure capacity
-  _ensure_capacity_update_ptr(dst, dst_pos + len, &src);
+  _ensure_capacity_update_ptr(dst, dst->len + len, &src);
 
   char *insert = dst->buff+dst_pos;
 
