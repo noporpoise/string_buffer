@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h> // kill on error
 #include <ctype.h> // toupper() and tolower()
 
 #include "string_buffer.h"
@@ -52,8 +53,9 @@ static void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
                     "[index: %zu, num_of_bits: %zu]\n",
             file, line, func, pos, sbuf->len);
-    errno = EDOM;
-    exit(EXIT_FAILURE);
+    kill(getpid(), SIGABRT);
+    // errno = EDOM;
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -66,8 +68,9 @@ static void _bounds_check_read(const StrBuf* sbuf, size_t pos,
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
                     "[index: %zu, num_of_bits: %zu]\n",
             file, line, func, pos, sbuf->len);
-    errno = EDOM;
-    exit(EXIT_FAILURE);
+    kill(getpid(), SIGABRT);
+    // errno = EDOM;
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -78,10 +81,12 @@ static void _bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t le
   if(start + len > sbuf->len)
   {
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
-                    "[start: %zu; length: %zu; strlen: %zu]\n",
-            file, line, func, start, len, sbuf->len);
-    errno = EDOM;
-    exit(EXIT_FAILURE);
+                    "[start: %zu; length: %zu; strlen: %zu; buf:%.*s%s]\n",
+            file, line, func, start, len, sbuf->len,
+            (int)MIN(5, sbuf->len), sbuf->buff, sbuf->len > 5 ? "..." : "");
+    kill(getpid(), SIGABRT);
+    // errno = EDOM;
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -210,7 +215,8 @@ void strbuf_ensure_capacity(StrBuf *sbuf, size_t size)
     fprintf(stderr, "%s:%i:Error: strbuf_ensure_capacity couldn't resize "
                     "buffer. [requested %zu bytes; capacity: %zu bytes]\n",
             __FILE__, __LINE__, size, sbuf->capacity);
-    exit(EXIT_FAILURE);
+    kill(getpid(), SIGABRT);
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -227,7 +233,8 @@ static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t size,
       fprintf(stderr, "%s:%i:Error: _ensure_capacity_update_ptr couldn't resize "
                       "buffer. [requested %zu bytes; capacity: %zu bytes]\n",
               __FILE__, __LINE__, size, sbuf->capacity);
-      exit(EXIT_FAILURE);
+      kill(getpid(), SIGABRT);
+      // exit(EXIT_FAILURE);
     }
 
     // ptr may have pointed to sbuf, which has now moved
@@ -243,7 +250,8 @@ void strbuf_shrink(StrBuf *sbuf, size_t new_len)
     fprintf(stderr, "%s:%i:Error: strbuf_shrink arg longer than length "
                     "[new_len: %zu; cur_len: %zu]\n",
             __FILE__, __LINE__, new_len, sbuf->len);
-    exit(EXIT_FAILURE);
+    kill(getpid(), SIGABRT);
+    // exit(EXIT_FAILURE);
   }
 
   sbuf->len = new_len;
@@ -476,7 +484,8 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
   size_t buf_len = sbuf->capacity - pos;
   if(buf_len == 0 && !strbuf_resize(sbuf, sbuf->capacity << 1)) {
     fprintf(stderr, "%s:%i:Error: Out of memory\n", __FILE__, __LINE__);
-    exit(EXIT_FAILURE);
+    kill(getpid(), SIGABRT);
+    // exit(EXIT_FAILURE);
   }
 
   // Make a copy of the list of args incase we need to resize buff and try again
