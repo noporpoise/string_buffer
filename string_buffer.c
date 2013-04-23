@@ -24,6 +24,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+// POSIX required for kill signal to work
+#define _XOPEN_SOURCE 700
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
