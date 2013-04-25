@@ -104,9 +104,6 @@ freadline(f,out)
 #define gzgets2(gz,buf,len) gzgets(gz,buf,(int)(len))
 #define fgets2(f,buf,len) fgets(buf,(int)(len),f)
 
-#define gzputs2(gz,buf) gzputs(gz,buf)
-#define fputs2(f,buf) fputs(buf,f)
-
 // fgetc(f), gzgetc(gz) are already good to go
 
 // Define readline for gzFile and FILE (unbuffered)
@@ -251,5 +248,44 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 
 _func_gets_buf(gzgets_buf,gzFile,gzread2)
 _func_gets_buf(fgets_buf,FILE*,fread2)
+
+
+/*
+ Output (unbuffered)
+
+fputc2(fh,c)
+gzputc2(gz,c)
+fputs2(fh,c)
+gzputs2(gz,c)
+fprintf(fh,fmt,...) / gzprintf(gz,fmt,...) already useable
+fwrite2(fh,ptr,len)
+gzwrite2(gz,ptr,len)
+*/
+
+#define fputc2(fh,c) fputc(c,fh)
+#define gzputc2(gz,c) gzputc(gz,c)
+
+#define fputs2(fh,c) fputs(c,fh)
+#define gzputs2(gz,c) gzputs(gz,c)
+
+#define fwrite2(fh,ptr,len) fwrite(ptr,len,1,fh)
+#define gzwrite2(gz,ptr,len) gzwrite(gz,ptr,len)
+
+/*
+ Output (buffered)
+
+// To do
+fputc_buf(fh,buf,c)
+gzputc_buf(gz,buf,c)
+fputs_buf(fh,buf,str)
+gzputs_buf(gz,buf,str)
+fprintf_buf(fh,buf,fmt,...)
+gzprintf_buf(gz,buf,fmt,...)
+fwrite_buf(fh,buf,ptr,len)
+gzwrite_buf(gz,buf,ptr,len)
+buffer_flush(fh,buf)
+buffer_gzflush(gz,buf)
+*/
+
 
 #endif
