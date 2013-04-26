@@ -16,7 +16,7 @@ endif
 
 all: libstrbuf.a strbuf_test
 
-libstrbuf.a: string_buffer.c string_buffer.h buffered_input.h
+libstrbuf.a: string_buffer.c string_buffer.h stream_buffer.h
 	$(CC) $(CFLAGS) $(OPT) -c string_buffer.c -o string_buffer.o
 	ar -csru libstrbuf.a string_buffer.o
 

@@ -31,7 +31,7 @@
 #include <zlib.h> // needed for gzFile
 #include <stdarg.h> // needed for va_list
 
-#include "buffered_input.h"
+#include "stream_buffer.h"
 
 typedef struct
 {

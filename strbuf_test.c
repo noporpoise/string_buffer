@@ -215,7 +215,7 @@ void string_free(String *st)
 // Compare buffered vs unbuffered + gzfile vs FILE
 void test_buffered_reading()
 {
-  SUITE_START("buffered reading (getc/gets/readline/skipline)");
+  SUITE_START("buffered reading (getc/gets/read/readline/skipline)");
 
   // generate file
   char *tmp = malloc(10000);
@@ -227,6 +227,7 @@ void test_buffered_reading()
   *(tmpptr++) = '\n';
   strcpy(tmpptr, "That's all folks!");
 
+  // Save the string to four files
   FILE *file1 = fopen(tmp_file1, "w");
   fputs2(file1, tmp);
   fclose(file1);
@@ -243,6 +244,7 @@ void test_buffered_reading()
   gzputs(gzfile2, tmp);
   gzclose(gzfile2);
 
+  // Open the files for reading
   file1 = fopen(tmp_file1, "r");
   file2 = fopen(tmp_file2, "r");
   gzfile1 = gzopen(tmp_gzfile1, "r");
@@ -268,10 +270,10 @@ void test_buffered_reading()
   ASSERT(c4 == 'h');
 
   // readline
-  freadline(file1, &st1->text, &st1->len, &st1->size);
-  freadline_buf(file2, fbuf, &st2->text, &st2->len, &st2->size);
-  gzreadline(gzfile1, &st3->text, &st3->len, &st3->size);
-  gzreadline_buf(gzfile2, gzbuf, &st4->text, &st4->len, &st4->size);
+  ASSERT(freadline(file1, &(st1->text), &(st1->len), &(st1->size)) > 0);
+  ASSERT(freadline_buf(file2, fbuf, &(st2->text), &(st2->len), &(st2->size)) > 0);
+  ASSERT(gzreadline(gzfile1, &(st3->text), &(st3->len), &(st3->size)) > 0);
+  ASSERT(gzreadline_buf(gzfile2, gzbuf, &(st4->text), &(st4->len), &(st4->size)) > 0);
 
   ASSERT(strcmp(st1->text, "i\n") == 0);
   ASSERT(strcmp(st2->text, "i\n") == 0);
@@ -354,23 +356,58 @@ void test_buffered_reading()
   ASSERT(strcmp(st3->text, "That's all folks!") == 0);
   ASSERT(strcmp(st4->text, "That's all folks!") == 0);
 
-  // free
-  string_free(st1);
-  string_free(st2);
-  string_free(st3);
-  string_free(st4);
-
   // Check file/buffers empty
   ASSERT(fgetc(file1) == -1);
   ASSERT(fgetc_buf(file2, fbuf) == -1);
   ASSERT(gzgetc(gzfile1) == -1);
   ASSERT(gzgetc_buf(gzfile2, gzbuf) == -1);
 
-  // close
+  // close files
   fclose(file1);
   fclose(file2);
   gzclose(gzfile1);
   gzclose(gzfile2);
+
+  // Open the files for reading again
+  file1 = fopen(tmp_file1, "r");
+  file2 = fopen(tmp_file2, "r");
+  gzfile1 = gzopen(tmp_gzfile1, "r");
+  gzfile2 = gzopen(tmp_gzfile2, "r");
+
+  // Reset strings
+  st1->len = st2->len = st3->len = st4->len = 0;
+
+  // Rest buffers
+  fbuf->begin = fbuf->end = gzbuf->begin = gzbuf->end = 0;
+
+  // Read lines from file1 and compare to fread results on other files
+  while(freadline(file1, &st1->text, &st1->len, &st1->size) > 0)
+  {
+    ASSERT(fread_buf(file2, st2->text, st1->len, fbuf) == (int)st1->len);
+    ASSERT(gzread(gzfile1, st3->text, st1->len) == (int)st1->len);
+    ASSERT(gzread_buf(gzfile2, st4->text, st1->len, gzbuf) == (int)st1->len);
+
+    // Null terminate since fread doesn't do that
+    st2->text[st1->len] = st3->text[st1->len] = st4->text[st1->len] = '\0';
+
+    ASSERT(strcmp(st1->text,st2->text) == 0);
+    ASSERT(strcmp(st1->text,st3->text) == 0);
+    ASSERT(strcmp(st1->text,st4->text) == 0);
+
+    st1->len = 0;
+  }
+
+  // close files
+  fclose(file1);
+  fclose(file2);
+  gzclose(gzfile1);
+  gzclose(gzfile2);
+
+  // free
+  string_free(st1);
+  string_free(st2);
+  string_free(st3);
+  string_free(st4);
 
   SUITE_END();
 }
