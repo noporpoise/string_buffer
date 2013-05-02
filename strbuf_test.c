@@ -215,7 +215,7 @@ void string_free(String *st)
 // Compare buffered vs unbuffered + gzfile vs FILE
 void test_buffered_reading()
 {
-  SUITE_START("buffered reading (getc/gets/read/readline/skipline)");
+  SUITE_START("buffered reading (getc/ungetc/gets/read/readline/skipline)");
 
   // generate file
   char *tmp = malloc(10000);
@@ -263,6 +263,23 @@ void test_buffered_reading()
   char c2 = fgetc_buf(file2, fbuf);
   char c3 = gzgetc(gzfile1);
   char c4 = gzgetc_buf(gzfile2, gzbuf);
+
+  ASSERT(c1 == 'h');
+  ASSERT(c2 == 'h');
+  ASSERT(c3 == 'h');
+  ASSERT(c4 == 'h');
+
+  // ungetc
+  ASSERT(ungetc(c1, file1) == c1);
+  ASSERT(ungetc_buf(c2, fbuf) == c2);
+  ASSERT(gzungetc(c3, gzfile1) == c3);
+  ASSERT(ungetc_buf(c4, gzbuf) == c4);
+
+  // getc again
+  c1 = fgetc(file1);
+  c2 = fgetc_buf(file2, fbuf);
+  c3 = gzgetc(gzfile1);
+  c4 = gzgetc_buf(gzfile2, gzbuf);
 
   ASSERT(c1 == 'h');
   ASSERT(c2 == 'h');

@@ -82,6 +82,8 @@ Unbuffered
 
 fgetc(f)
 gzgetc(gz)
+fungetc(f,c)
+gzungetc(gz,c)
 gzread2(gz,buf,len)
 fread2(f,buf,len)
 gzgets2(gz,buf,len)
@@ -106,6 +108,7 @@ freadline(f,out)
 #define fgets2(f,buf,len) fgets(buf,(int)(len),f)
 
 // fgetc(f), gzgetc(gz) are already good to go
+// fungetc(c,f), gzungetc(c,gz) are already good to go
 
 // Define readline for gzFile and FILE (unbuffered)
 #define _func_readline(name,type_t,__gets) \
@@ -147,6 +150,7 @@ _func_skipline(fskipline,FILE*,fgetc)
 /*
 fgetc_buf(f,in)
 gzgetc_buf(gz,in)
+ungetc_buf(c,in)
 fread_buf(f,ptr,len,in)
 gzread_buf(f,ptr,len,in)
 gzreadline_buf(gz,in,out)
@@ -174,6 +178,22 @@ freadline_buf(f,in,out)
 
 _func_getc_buf(gzgetc_buf,gzFile,gzread2)
 _func_getc_buf(fgetc_buf,FILE*,fread2)
+
+// Define ungetc for buffers
+// returns c if successful, otherwise -1
+static inline int ungetc_buf(int c, buffer_t *in)
+{
+  if(in->begin == 0) {
+    if(in->end == 0) {
+      in->b[0] = c;
+      in->end = 1;
+      return c;
+    }
+    else return -1;
+  }
+  in->b[--(in->begin)] = c;
+  return c;
+}
 
 #define _func_read_buf(fname,type_t,__read)                                    \
   static inline int fname(type_t file, void *ptr, size_t len, buffer_t *in)    \
