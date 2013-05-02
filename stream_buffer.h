@@ -110,6 +110,8 @@ freadline(f,out)
 // fgetc(f), gzgetc(gz) are already good to go
 // fungetc(c,f), gzungetc(c,gz) are already good to go
 
+#define fungetc(c,f) ungetc(c,f)
+
 // Define readline for gzFile and FILE (unbuffered)
 #define _func_readline(name,type_t,__gets) \
   static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
