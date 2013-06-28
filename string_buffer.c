@@ -124,6 +124,11 @@ StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity)
   return sbuf;
 }
 
+void strbuf_dealloc(StrBuf *sbuf)
+{
+  free(sbuf->buff);
+}
+
 void strbuf_reset(StrBuf* sbuf)
 {
   sbuf->len = 0;

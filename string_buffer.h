@@ -58,13 +58,16 @@ typedef struct
 StrBuf* strbuf_init(size_t size);
 StrBuf* strbuf_create(const char* str);
 
+// Destructor
+void strbuf_free(StrBuf* sbuf);
+
 // Place a string buffer into existing memory. Example:
 //   StrBuf buf;
 //   strbuf_alloc(&buf, 100);
+//   ...
+//   strbuf_dealloc(&buf);
 StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity);
-
-// Destructors
-void strbuf_free(StrBuf* sbuf);
+void strbuf_dealloc(StrBuf *sbuf);
 
 // Clone a buffer (including content)
 StrBuf* strbuf_clone(const StrBuf* sbuf);
