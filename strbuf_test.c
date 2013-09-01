@@ -154,8 +154,8 @@ void test_buffers()
 
   buffer_t *buf = buffer_new(4);
 
-  ASSERT(buf->begin == 0);
-  ASSERT(buf->end == 0);
+  ASSERT(buf->begin == 1);
+  ASSERT(buf->end == 1);
   ASSERT(buf->size >= 4);
 
   buffer_append_char(buf, 'a');
@@ -164,27 +164,27 @@ void test_buffers()
   buffer_append_char(buf, 'd');
   buffer_append_char(buf, 'e');
 
-  ASSERT(buf->begin == 0);
-  ASSERT(buf->end == 5);
-  ASSERT(buf->size >= 6);
-  ASSERT(strcmp(buf->b, "abcde") == 0);
+  ASSERT(buf->begin == 1);
+  ASSERT(buf->end == 6);
+  ASSERT(buf->size >= 7); // 1 + strlen + '\0'
+  ASSERT(strcmp(buf->b+1, "abcde") == 0);
 
   // Causes expansion -- tests ensure_capacity
   buffer_append_str(buf, "fghijklmnopqrstuvwxyz");
 
-  ASSERT(buf->begin == 0);
-  ASSERT(buf->end == 26);
-  ASSERT(buf->size >= 27);
-  ASSERT(strcmp(buf->b, "abcdefghijklmnopqrstuvwxyz") == 0);
+  ASSERT(buf->begin == 1);
+  ASSERT(buf->end == 27);
+  ASSERT(buf->size >= 28); // 1 + strlen + '\0'
+  ASSERT(strcmp(buf->b+1, "abcdefghijklmnopqrstuvwxyz") == 0);
 
   buffer_append_char(buf, '\r');
   buffer_append_char(buf, '\n');
   buffer_chomp(buf);
 
-  ASSERT(buf->begin == 0);
-  ASSERT(buf->end == 26);
-  ASSERT(buf->size >= 27);
-  ASSERT(strcmp(buf->b, "abcdefghijklmnopqrstuvwxyz") == 0);
+  ASSERT(buf->begin == 1);
+  ASSERT(buf->end == 27);
+  ASSERT(buf->size >= 28); // 1 + strlen + '\0'
+  ASSERT(strcmp(buf->b+1, "abcdefghijklmnopqrstuvwxyz") == 0);
 
   buffer_free(buf);
 
@@ -244,6 +244,8 @@ void test_buffered_reading()
   gzputs(gzfile2, tmp);
   gzclose(gzfile2);
 
+  free(tmp);
+
   // Open the files for reading
   file1 = fopen(tmp_file1, "r");
   file2 = fopen(tmp_file2, "r");
@@ -252,6 +254,9 @@ void test_buffered_reading()
 
   buffer_t *fbuf = buffer_new(12);
   buffer_t *gzbuf = buffer_new(12);
+
+  ASSERT(fbuf != NULL);
+  ASSERT(gzbuf != NULL);
 
   String *st1 = string_new(10);
   String *st2 = string_new(10);
@@ -425,6 +430,8 @@ void test_buffered_reading()
   string_free(st2);
   string_free(st3);
   string_free(st4);
+  buffer_free(gzbuf);
+  buffer_free(fbuf);
 
   SUITE_END();
 }

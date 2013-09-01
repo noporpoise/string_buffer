@@ -24,9 +24,9 @@ typedef struct
 
 static inline char buffer_init(buffer_t *b, size_t s)
 {
-  b->size = s < 4 ? 4 : ROUNDUP2POW(s);
+  b->size = s <= 4 ? 4 : ROUNDUP2POW(s);
   if((b->b = malloc(b->size)) == NULL) return 0;
-  b->begin = b->end = 0;
+  b->begin = b->end = 1;
   return 1;
 }
 
@@ -40,31 +40,36 @@ static inline buffer_t* buffer_new(size_t s)
 
 #define buffer_free(buf) do{free((buf)->b); free(buf); } while(0)
 
+static inline void _ensure_capacity(char **buf, size_t *size, size_t len)
+{
+  len++; // char after for \0
+  if(*size < len) {
+    *size = ROUNDUP2POW(len);
+    *buf = realloc(*buf, *size);
+    if(*buf == NULL) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE);}
+  }
+}
+
 // size_t s is the number of bytes you want to be able to store
 // the actual buffer is created with s+1 bytes to allow for the \0
 static inline void buffer_ensure_capacity(buffer_t *buf, size_t s)
 {
-  if(buf->size < ++s) {
-    buf->size = ROUNDUP2POW(s);
-    buf->b = realloc(buf->b, buf->size);
-    if(buf->b == NULL) {
-      fprintf(stderr, "[%s:%i] Out of memory\n", __FILE__, __LINE__);
-      exit(EXIT_FAILURE);
-    }
-  }
+  // s+1 for char before bufer
+  _ensure_capacity(&buf->b, &buf->size, s+1);
 }
 
 static inline void buffer_append_str(buffer_t *buf, char *str)
 {
-  size_t len = buf->end + strlen(str);
-  buffer_ensure_capacity(buf, len);
+  size_t len = strlen(str);
+  buffer_ensure_capacity(buf, buf->end+len);
   memcpy(buf->b+buf->end, str, len);
-  buf->b[buf->end = len] = 0;
+  buf->end += len;
+  buf->b[buf->end] = 0;
 }
 
 static inline void buffer_append_char(buffer_t *buf, char c)
 {
-  buffer_ensure_capacity(buf, buf->end+sizeof(char));
+  buffer_ensure_capacity(buf, buf->end+1);
   buf->b[buf->end++] = c;
   buf->b[buf->end] = '\0';
 }
@@ -72,13 +77,13 @@ static inline void buffer_append_char(buffer_t *buf, char c)
 #define buffer_terminate(buf) ((buf)->b[(buf)->end] = 0)
 
 // Beware: buffer_chomp only removes 1 end-of-line at a time
-#define buffer_chomp(buf) do { \
-    if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\n') {                     \
-      (buf)->end--;                                                            \
-      if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\r') (buf)->end--;       \
-      (buf)->b[(buf)->end] = 0;                                                \
-    }                                                                          \
-  } while(0)
+#define buffer_chomp(buf) ({                                                   \
+  if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\n') {                       \
+    (buf)->end--;                                                              \
+    if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\r') (buf)->end--;         \
+    (buf)->b[(buf)->end] = 0;                                                  \
+  }                                                                            \
+})
 
 /* 
 Unbuffered
@@ -95,13 +100,6 @@ gzreadline(gz,out)
 freadline(f,out)
 */
 
-#define _ENSURE_CAPACITY(buf,sspace,size) do {                                 \
-    size_t space = sspace+1;                                                   \
-    if(*size < space) {                                                        \
-      *size = ROUNDUP2POW(space);                                              \
-      *buf = realloc(*buf, *size);                                             \
-    }                                                                          \
-  } while(0)
 
 // Define read for gzFile and FILE (unbuffered)
 #define gzread2(gz,buf,len) gzread(gz,buf,(unsigned int)len)
@@ -119,14 +117,14 @@ freadline(f,out)
 #define _func_readline(name,type_t,__gets) \
   static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
   {                                                                            \
-    _ENSURE_CAPACITY(buf, *len+1, size);                                       \
+    if(*len+1 >= *size) *buf = realloc(*buf, *size *= 2);                      \
     size_t n, total_read = 0;                                                  \
     while(__gets(file, *buf+*len, *size-*len) != NULL)                         \
     {                                                                          \
       n = strlen(*buf+*len);                                                   \
       *len += n; total_read += n;                                              \
       if((*buf)[*len-1] == '\n') return total_read;                            \
-      else *buf = realloc(*buf, *size <<= 1);                                  \
+      else *buf = realloc(*buf, *size *= 2);                                   \
     }                                                                          \
     return total_read;                                                         \
   }
@@ -163,20 +161,22 @@ freadline_buf(f,in,out)
 */
 
 // __read is either gzread2 or fread2
+// both return -1 on error, 0 if nothing read, >0 on success
+// offset of 1 so we can unget at least one char
 // Beware: read-in buffer is not null-terminated
-#define _READ_BUFFER(file,in,__read,fail) do {                                 \
-    long _input = __read(file,(in)->b,(in)->size);                             \
-    if(_input < 0) return fail;                                                \
-    (in)->end = _input; (in)->begin = 0;                                       \
-  } while(0)
+#define _READ_BUFFER(file,in,__read,fail) ({                                   \
+  long _input = __read(file,(in)->b+1,(in)->size-1);                           \
+  if(_input < 0) return fail;                                                  \
+  (in)->end = 1+_input; (in)->begin = 1;                                       \
+})
 
 // Define getc for gzFile and FILE (buffered)
 #define _func_getc_buf(fname,type_t,__read)                                    \
   static inline int fname(type_t file, buffer_t *in)                           \
   {                                                                            \
-    if(in->begin >= in->end) {                                                 \
+    if(in->begin == in->end) {                                                 \
       _READ_BUFFER(file,in,__read,-1);                                         \
-      return in->end == 0 ? -1 : in->b[in->begin++];                           \
+      return in->end == in->begin ? -1 : in->b[in->begin++];                   \
     }                                                                          \
     return in->b[in->begin++];                                                 \
   }
@@ -205,7 +205,7 @@ static inline int ungetc_buf(int c, buffer_t *in)
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
     size_t remaining = len, next;                                              \
-    while(in->end != 0 && remaining > 0) {                                     \
+    while(in->end > in->begin && remaining > 0) {                             \
       next = in->end - in->begin;                                              \
       if(remaining <= next) next = remaining;                                  \
       memcpy(ptr, in->b+in->begin, next);                                      \
@@ -226,11 +226,11 @@ _func_read_buf(fread_buf,FILE*,fread2)
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
     size_t offset, buffered, total_read = 0;                                   \
-    while(in->end != 0)                                                        \
+    while(in->end > in->begin)                                                 \
     {                                                                          \
       for(offset = in->begin; offset < in->end && in->b[offset++] != '\n'; );  \
       buffered = offset - in->begin;                                           \
-      _ENSURE_CAPACITY(buf, *len+buffered, size);                              \
+      _ensure_capacity(buf, size, *len+buffered);                              \
       memcpy(*buf+*len, in->b+in->begin, buffered);                            \
       *len += buffered;                                                        \
       in->begin = offset;                                                      \
@@ -251,7 +251,7 @@ _func_readline_buf(freadline_buf,FILE*,fread2)
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
     size_t offset, skipped_bytes = 0;                                          \
-    while(in->end != 0)                                                        \
+    while(in->end > in->begin)                                                 \
     {                                                                          \
       for(offset = in->begin; offset < in->end && in->b[offset++] != '\n'; )   \
       skipped_bytes += offset - in->begin;                                     \
@@ -270,14 +270,14 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 // Reads upto len-1 bytes (or to the first \n if first) into str
 // Adds null-terminating byte
 #define _func_gets_buf(fname,type_t,__read) \
-  static inline char* fname(type_t file, buffer_t *in, char* str,              \
+  static inline char* fname(type_t file, buffer_t *in, char *str,              \
                             unsigned int len)                                  \
   {                                                                            \
     if(len == 0) return NULL;                                                  \
     if(len == 1) {str[0] = 0; return str; }                                    \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,NULL); }            \
     size_t i, buffered, limit, total_read = 0, remaining = len-1;              \
-    while(in->end != 0)                                                        \
+    while(in->end > in->begin)                                                 \
     {                                                                          \
       limit = (in->begin+remaining < in->end ? in->begin+remaining : in->end); \
       for(i = in->begin; i < limit && in->b[i++] != '\n'; );                   \

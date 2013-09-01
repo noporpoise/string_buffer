@@ -6,10 +6,8 @@ CFLAGS := -Wall -Wextra
 LIBFLAGS := -L. -lstrbuf -lz
 
 ifdef DEBUG
-	CFLAGS := $(CFLAGS) -O0 -DDEBUG=1 --debug -g -ggdb
-	OPT = -O0
+	OPT = -O0 -DDEBUG=1 --debug -g -ggdb
 else
-	CFLAGS := $(CFLAGS)
 	OPT = -O3
 endif
 
@@ -21,7 +19,7 @@ libstrbuf.a: string_buffer.c string_buffer.h stream_buffer.h
 	ar -csru libstrbuf.a string_buffer.o
 
 strbuf_test: strbuf_test.c libstrbuf.a
-	$(CC) $(CFLAGS) -O0 strbuf_test.c -o strbuf_test $(LIBFLAGS)
+	$(CC) $(CFLAGS) $(OPT) strbuf_test.c -o strbuf_test $(LIBFLAGS)
 
 clean:
 	rm -rf string_buffer.o libstrbuf.a strbuf_test *.dSYM *.greg
