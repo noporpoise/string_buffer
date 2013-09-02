@@ -27,6 +27,7 @@ static inline char buffer_init(buffer_t *b, size_t s)
   b->size = s <= 4 ? 4 : ROUNDUP2POW(s);
   if((b->b = malloc(b->size)) == NULL) return 0;
   b->begin = b->end = 1;
+  b->b[b->size-1] = 0;
   return 1;
 }
 
@@ -54,8 +55,7 @@ static inline void _ensure_capacity(char **buf, size_t *size, size_t len)
 // the actual buffer is created with s+1 bytes to allow for the \0
 static inline void buffer_ensure_capacity(buffer_t *buf, size_t s)
 {
-  // s+1 for char before bufer
-  _ensure_capacity(&buf->b, &buf->size, s+1);
+  _ensure_capacity(&buf->b, &buf->size, s);
 }
 
 static inline void buffer_append_str(buffer_t *buf, char *str)
@@ -199,6 +199,9 @@ static inline int ungetc_buf(int c, buffer_t *in)
   in->b[--(in->begin)] = c;
   return c;
 }
+
+#define fungetc_buf(c,in) ungetc_buf(c,in)
+#define gzungetc_buf(c,in) ungetc_buf(c,in)
 
 #define _func_read_buf(fname,type_t,__read)                                    \
   static inline int fname(type_t file, void *ptr, size_t len, buffer_t *in)    \
