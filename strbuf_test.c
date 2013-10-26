@@ -332,10 +332,10 @@ void test_buffered_reading()
   gzskipline_buf(gzfile2, gzbuf);
 
   // gets
-  fgets2(file1, st1->text, 10);
-  fgets_buf(file2, fbuf, st2->text, 10);
-  gzgets2(gzfile1, st3->text, 10);
-  gzgets_buf(gzfile2, gzbuf, st4->text, 10);
+  ASSERT(fgets2(file1, st1->text, 10) != NULL);
+  ASSERT(fgets_buf(file2, fbuf, st2->text, 10) != NULL);
+  ASSERT(gzgets2(gzfile1, st3->text, 10) != NULL);
+  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->text, 10) != NULL);
 
   ASSERT(strcmp(st1->text, "aaaaaaaaa") == 0);
   ASSERT(strcmp(st2->text, "aaaaaaaaa") == 0);
