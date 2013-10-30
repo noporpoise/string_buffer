@@ -368,10 +368,10 @@ void test_buffered_reading()
   st1->len = st2->len = st3->len = st4->len = 0;
 
   // gets
-  fgets2(file1, st1->text, st1->size);
-  fgets_buf(file2, fbuf, st2->text, (int)st2->size);
-  gzgets2(gzfile1, st3->text, st3->size);
-  gzgets_buf(gzfile2, gzbuf, st4->text, (int)st4->size);
+  ASSERT(fgets2(file1, st1->text, st1->size) != NULL);
+  ASSERT(fgets_buf(file2, fbuf, st2->text, (int)st2->size) != NULL);
+  ASSERT(gzgets2(gzfile1, st3->text, st3->size) != NULL);
+  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->text, (int)st4->size) != NULL);
 
   ASSERT(strcmp(st1->text, "That's all folks!") == 0);
   ASSERT(strcmp(st2->text, "That's all folks!") == 0);
