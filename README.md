@@ -354,8 +354,8 @@ buffered_input.h also provides generic buffered input functions
     size_t fread2(FILE *f, buffer_t *buf, size_t len)
 
     // Return pointer to buffer read into or NULL if EOF
-    char* gzgets2(gzFile gz, buffer_t *buf, size_t len)
-    char* fgets2(FILE *f, buffer_t *buf, size_t len)
+    char* gzgets2(gzFile gz, buffer_t *buf, int len)
+    char* fgets2(FILE *f, buffer_t *buf, int len)
 
     // Writes the given null-terminated string to a stream, excluding the
     // terminating null character.

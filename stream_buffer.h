@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <zlib.h>
+#include <limits.h>
 
 typedef struct
 {
@@ -22,8 +23,10 @@ typedef struct
   #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
 #endif
 
+// Can't have a buffer larger than 2^32 because that's all that gzFile can read
 static inline char buffer_init(buffer_t *b, size_t s)
 {
+  if(s > UINT_MAX) { s = UINT_MAX; }
   b->size = s <= 4 ? 4 : ROUNDUP2POW(s);
   if((b->b = malloc(b->size)) == NULL) return 0;
   b->begin = b->end = 1;
@@ -274,7 +277,8 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 // Reads upto len-1 bytes (or to the first \n if first) into str
 // Adds null-terminating byte
 #define _func_gets_buf(fname,type_t,__read) \
-  static inline char* fname(type_t file, buffer_t *in, char *str, size_t len)  \
+  static inline char* fname(type_t file, buffer_t *in, char *str,              \
+                            unsigned int len)                                  \
   {                                                                            \
     if(len == 0) return NULL;                                                  \
     if(len == 1) {str[0] = 0; return str; }                                    \
