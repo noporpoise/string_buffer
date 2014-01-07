@@ -4,6 +4,7 @@
  url: https://github.com/noporpoise/StringBuffer
  author: Isaac Turner <turner.isaac@gmail.com>
  license: Public Domain
+ Jan 2014
 */
 
 // POSIX required for kill signal to work
