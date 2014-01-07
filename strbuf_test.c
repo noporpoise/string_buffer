@@ -44,7 +44,7 @@ const char tmp_gzfile2[] = "tmp.strbuf.002.txt.gz";
 /*  Testing toolkit  */
 /*********************/
 
-char *suite_name;
+const char *suite_name;
 char suite_pass;
 size_t suites_run = 0, suites_failed = 0, suites_empty = 0;
 size_t tests_passed = 0, tests_failed = 0;
@@ -264,10 +264,10 @@ void test_buffered_reading()
   String *st4 = string_new(10);
 
   // getc
-  char c1 = fgetc(file1);
-  char c2 = fgetc_buf(file2, fbuf);
-  char c3 = gzgetc(gzfile1);
-  char c4 = gzgetc_buf(gzfile2, gzbuf);
+  int c1 = fgetc(file1);
+  int c2 = fgetc_buf(file2, fbuf);
+  int c3 = gzgetc(gzfile1);
+  int c4 = gzgetc_buf(gzfile2, gzbuf);
 
   ASSERT(c1 == 'h');
   ASSERT(c2 == 'h');
@@ -369,9 +369,9 @@ void test_buffered_reading()
 
   // gets
   ASSERT(fgets2(file1, st1->text, st1->size) != NULL);
-  ASSERT(fgets_buf(file2, fbuf, st2->text, (int)st2->size) != NULL);
+  ASSERT(fgets_buf(file2, fbuf, st2->text, st2->size) != NULL);
   ASSERT(gzgets2(gzfile1, st3->text, st3->size) != NULL);
-  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->text, (int)st4->size) != NULL);
+  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->text, st4->size) != NULL);
 
   ASSERT(strcmp(st1->text, "That's all folks!") == 0);
   ASSERT(strcmp(st2->text, "That's all folks!") == 0);
@@ -406,7 +406,7 @@ void test_buffered_reading()
   while(freadline(file1, &st1->text, &st1->len, &st1->size) > 0)
   {
     ASSERT(fread_buf(file2, st2->text, st1->len, fbuf) == (int)st1->len);
-    ASSERT(gzread(gzfile1, st3->text, st1->len) == (int)st1->len);
+    ASSERT(gzread(gzfile1, st3->text, (unsigned int)st1->len) == (int)st1->len);
     ASSERT(gzread_buf(gzfile2, st4->text, st1->len, gzbuf) == (int)st1->len);
 
     // Null terminate since fread doesn't do that
@@ -612,8 +612,8 @@ void test_as_str()
   SUITE_END();
 }
 
-void _test_append(StrBuf* sbuf, char c, char *str, char *str2, int n,
-                  const StrBuf *append)
+void _test_append(StrBuf* sbuf, char c, const char *str, const char *str2,
+                  size_t n, const StrBuf *append)
 {
   size_t len = sbuf->len;
   size_t extend = append->len;
@@ -825,7 +825,7 @@ void test_copy()
   strbuf_set(sbuf, "");
   _test_copy(sbuf, 0, "asdf", 4);
 
-  int i, j;
+  size_t i, j;
   for(i = 0; i <= 4; i++)
   {
     strbuf_set(sbuf, "asdf");
@@ -890,7 +890,7 @@ void test_insert()
   strbuf_set(sbuf, "");
   _test_insert(sbuf, 0, 4, "asdf");
 
-  int i, j;
+  size_t i, j;
   for(i = 0; i <= 4; i++)
   {
     strbuf_set(sbuf, "asdf");
@@ -1343,7 +1343,7 @@ void test_sscanf()
 {
   SUITE_START("using sscanf");
   StrBuf *sbuf = strbuf_new();
-  char *input = "I'm sorry Dave I can't do that";
+  const char *input = "I'm sorry Dave I can't do that";
   
   strbuf_ensure_capacity(sbuf, strlen(input));
   sscanf(input, "I'm sorry %s I can't do that", sbuf->buff);
@@ -1360,13 +1360,13 @@ void test_sscanf()
 void test_all_whitespace_old()
 {
   printf("Test string_is_all_whitespace:\n");
-  char* str = "  \tasdf";
+  const char* str = "  \tasdf";
   printf("string_is_all_whitespace('%s'): %i\n", str, string_is_all_whitespace(str));
   str = "  \t ";
   printf("string_is_all_whitespace('%s'): %i\n", str, string_is_all_whitespace(str));
 }
 
-void _test_split_old(char* split, char* txt)
+void _test_split_old(const char* split, const char* txt)
 {
   char** results;
   

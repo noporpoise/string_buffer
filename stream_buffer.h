@@ -58,7 +58,7 @@ static inline void buffer_ensure_capacity(buffer_t *buf, size_t s)
   _ensure_capacity(&buf->b, &buf->size, s);
 }
 
-static inline void buffer_append_str(buffer_t *buf, char *str)
+static inline void buffer_append_str(buffer_t *buf, const char *str)
 {
   size_t len = strlen(str);
   buffer_ensure_capacity(buf, buf->end+len);
@@ -164,10 +164,11 @@ freadline_buf(f,in,out)
 // both return -1 on error, 0 if nothing read, >0 on success
 // offset of 1 so we can unget at least one char
 // Beware: read-in buffer is not null-terminated
+// Returns fail on error
 #define _READ_BUFFER(file,in,__read,fail) ({                                   \
-  long _input = __read(file,(in)->b+1,(in)->size-1);                           \
+  long _input = (long)__read(file,(in)->b+1,(in)->size-1);                     \
   if(_input < 0) return fail;                                                  \
-  (in)->end = 1+_input; (in)->begin = 1;                                       \
+  (in)->end = 1+(size_t)_input; (in)->begin = 1;                               \
 })
 
 // Define getc for gzFile and FILE (buffered)
@@ -190,13 +191,13 @@ static inline int ungetc_buf(int c, buffer_t *in)
 {
   if(in->begin == 0) {
     if(in->end == 0) {
-      in->b[0] = c;
+      in->b[0] = (char)c;
       in->end = 1;
       return c;
     }
     else return -1;
   }
-  in->b[--(in->begin)] = c;
+  in->b[--(in->begin)] = (char)c;
   return c;
 }
 
@@ -208,7 +209,7 @@ static inline int ungetc_buf(int c, buffer_t *in)
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
     size_t remaining = len, next;                                              \
-    while(in->end > in->begin && remaining > 0) {                             \
+    while(in->end > in->begin && remaining > 0) {                              \
       next = in->end - in->begin;                                              \
       if(remaining <= next) next = remaining;                                  \
       memcpy(ptr, in->b+in->begin, next);                                      \
@@ -216,7 +217,7 @@ static inline int ungetc_buf(int c, buffer_t *in)
       if(remaining > next) { _READ_BUFFER(file,in,__read,-1); }                \
       remaining -= next;                                                       \
     }                                                                          \
-    return len - remaining;                                                    \
+    return (int)(len - remaining);                                             \
   }
 
 _func_read_buf(gzread_buf,gzFile,gzread2)
@@ -242,7 +243,7 @@ _func_read_buf(fread_buf,FILE*,fread2)
       _READ_BUFFER(file,in,__read,-1);                                         \
     }                                                                          \
     (*buf)[*len] = 0;                                                          \
-    return total_read;                                                         \
+    return (int)total_read;                                                    \
   }
 
 _func_readline_buf(gzreadline_buf,gzFile,gzread2)
@@ -262,7 +263,7 @@ _func_readline_buf(freadline_buf,FILE*,fread2)
       if(in->b[offset-1] == '\n') break;                                       \
       _READ_BUFFER(file,in,__read,-1);                                         \
     }                                                                          \
-    return skipped_bytes;                                                      \
+    return (int)skipped_bytes;                                                 \
   }
 
 _func_skipline_buf(gzskipline_buf,gzFile,gzread2)
@@ -273,8 +274,7 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 // Reads upto len-1 bytes (or to the first \n if first) into str
 // Adds null-terminating byte
 #define _func_gets_buf(fname,type_t,__read) \
-  static inline char* fname(type_t file, buffer_t *in, char *str,              \
-                            unsigned int len)                                  \
+  static inline char* fname(type_t file, buffer_t *in, char *str, size_t len)  \
   {                                                                            \
     if(len == 0) return NULL;                                                  \
     if(len == 1) {str[0] = 0; return str; }                                    \

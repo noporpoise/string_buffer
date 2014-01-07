@@ -4,6 +4,7 @@ Library code for handling strings and reading from files
 project: string_buffer  
 url: https://github.com/noporpoise/StringBuffer  
 author: Isaac Turner <turner.isaac@gmail.com>  
+license: Public Domain  
 
 About
 =====
@@ -337,50 +338,50 @@ Buffered input
 
 buffered_input.h also provides generic buffered input functions
 
-    static inline buffer_t* buffer_new(size_t s)
-    static inline char buffer_init(buffer_t *b, size_t s)
+    buffer_t* buffer_new(size_t s)
+    char buffer_init(buffer_t *b, size_t s)
     void buffer_free(buffer_t *b)
-    static inline void buffer_ensure_capacity(buffer_t *buf, size_t s)
-    static inline void buffer_append_str(buffer_t *buf, char *str)
-    static inline void buffer_append_char(buffer_t *buf, char c)
+    void buffer_ensure_capacity(buffer_t *buf, size_t s)
+    void buffer_append_str(buffer_t *buf, const char *str)
+    void buffer_append_char(buffer_t *buf, char c)
     void buffer_terminate(buffer_t *b)
     void buffer_chomp(buffer_t *b)
 
     // Standardized gzFile and FILE versions of stream functions
 
     // Return number of bytes read (0 -> EOF; gzread2 returns -1 on error)
-    int gzread2(gz,buf,len)
-    size_t fread2(f,buf,len)
+    int gzread2(gzFile gz, buffer_t *buf, unsigned int len)
+    size_t fread2(FILE *f, buffer_t *buf, size_t len)
 
     // Return pointer to buffer read into or NULL if EOF
-    char* gzgets2(gz,buf,len)
-    char* fgets2(f,buf,len)
+    char* gzgets2(gzFile gz, buffer_t *buf, size_t len)
+    char* fgets2(FILE *f, buffer_t *buf, size_t len)
 
     // Writes the given null-terminated string to a stream, excluding the
     // terminating null character.
     // Returns a non-negative number, or –1 in case of error. 
-    int gzputs2(gz,buf)
-    int fputs2(f,buf)
+    int gzputs2(gzFile gz, buffer_t *buf)
+    int fputs2(FILE *f, buffer_t *buf)
 
     // FILE readline
-    static inline size_t freadline(FILE* file, char **buf, size_t *len, size_t *size)
-    static inline size_t fskipline(FILE* file)
+    size_t freadline(FILE* file, char **buf, size_t *len, size_t *size)
+    size_t fskipline(FILE* file)
 
     // FILE Buffered reading
-    static inline int fgetc_buf(FILE* file, buffer_t *in)
-    static inline char* fgets_buf(FILE* file, buffer_t *in, char* str, unsigned int len)
-    static inline size_t freadline_buf(FILE* file, buffer_t *in, char **buf, size_t *len, size_t *size)
-    static inline size_t fskipline_buf(FILE* file, buffer_t *in)
+    int fgetc_buf(FILE* file, buffer_t *in)
+    char* fgets_buf(FILE* file, buffer_t *in, char* str, unsigned int len)
+    size_t freadline_buf(FILE* file, buffer_t *in, char **buf, size_t *len, size_t *size)
+    size_t fskipline_buf(FILE* file, buffer_t *in)
 
     // gzFile readline
-    static inline size_t gzreadline(gzFile file, char **buf, size_t *len, size_t *size)
-    static inline size_t fskipline(FILE* file)
+    size_t gzreadline(gzFile file, char **buf, size_t *len, size_t *size)
+    size_t fskipline(FILE* file)
 
     // gzFile Buffered reading
-    static inline int gzgetc_buf(gzFile file, buffer_t *in)
-    static inline char* gzgets_buf(gzFile file, buffer_t *in, char* str, unsigned int len)
-    static inline size_t gzreadline_buf(gzFile file, buffer_t *in, char **buf, size_t *len, size_t *size)
-    static inline size_t gzskipline_buf(gzFile file, buffer_t *in)
+    int gzgetc_buf(gzFile file, buffer_t *in)
+    char* gzgets_buf(gzFile file, buffer_t *in, char* str, unsigned int len)
+    size_t gzreadline_buf(gzFile file, buffer_t *in, char **buf, size_t *len, size_t *size)
+    size_t gzskipline_buf(gzFile file, buffer_t *in)
 
 Other string functions
 ----------------------
@@ -399,24 +400,7 @@ These work on `char*` not `StrBuf`, but they're here because they're useful.
 License
 =======
 
-    Copyright (c) 2011-3, Isaac Turner
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-    DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-    DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Public Domain. You may use this code as you like. No warranty. There may be bugs.
 
 Development
 ===========
