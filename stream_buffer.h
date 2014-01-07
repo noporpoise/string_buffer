@@ -1,3 +1,11 @@
+/*
+ stream_buffer.c
+ project: string_buffer
+ url: https://github.com/noporpoise/StringBuffer
+ author: Isaac Turner <turner.isaac@gmail.com>
+ license: Public Domain
+ Jan 2014
+*/
 
 #ifndef _STREAM_BUFFER_HEADER
 #define _STREAM_BUFFER_HEADER

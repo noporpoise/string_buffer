@@ -3,25 +3,7 @@
  project: string_buffer
  url: https://github.com/noporpoise/StringBuffer
  author: Isaac Turner <turner.isaac@gmail.com>
-
- Copyright (c) 2013, Isaac Turner
- All rights reserved.
-
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
- DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ license: Public Domain
 */
 
 // POSIX required for kill signal to work
@@ -43,7 +25,7 @@
   #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
 #endif
 
-#define exit_on_error() ({ kill(getpid(), SIGABRT); exit(EXIT_FAILURE); })
+#define exit_on_error() ({ abort(); exit(EXIT_FAILURE); })
 
 /*********************/
 /*  Bounds checking  */
@@ -328,14 +310,14 @@ void strbuf_to_uppercase(StrBuf *sbuf)
 {
   char* pos;
   char* end = sbuf->buff + sbuf->len;
-  for(pos = sbuf->buff; pos < end; pos++) *pos = toupper(*pos);
+  for(pos = sbuf->buff; pos < end; pos++) *pos = (char)toupper(*pos);
 }
 
 void strbuf_to_lowercase(StrBuf *sbuf)
 {
   char* pos;
   char* end = sbuf->buff + sbuf->len;
-  for(pos = sbuf->buff; pos < end; pos++) *pos = tolower(*pos);
+  for(pos = sbuf->buff; pos < end; pos++) *pos = (char)tolower(*pos);
 }
 
 // Copy a string to this StrBuf, overwriting any existing characters
@@ -496,32 +478,33 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
   va_copy(argptr_cpy, argptr);
 
   int num_chars = vsnprintf(sbuf->buff+pos, buf_len, fmt, argptr);
+  va_end(argptr);
 
   // num_chars is the number of chars that would be written (not including '\0')
   // num_chars < 0 => failure
-  if((size_t)(num_chars + 1) >= buf_len)
+  if(num_chars < 0) {
+    fprintf(stderr, "Warning: strbuf_sprintf something went wrong..\n");
+    exit_on_error();
+  }
+
+  if((size_t)num_chars+1 >= buf_len)
   {
-    strbuf_ensure_capacity(sbuf, pos+num_chars);
+    strbuf_ensure_capacity(sbuf, pos+(size_t)num_chars);
 
     // now use the argptr copy we made earlier
     // Don't need to use vsnprintf now, vsprintf will do since we know it'll fit
     num_chars = vsprintf(sbuf->buff+pos, fmt, argptr_cpy);
-
     va_end(argptr_cpy);
+    if(num_chars < 0) {
+      fprintf(stderr, "Warning: strbuf_sprintf something went wrong..\n");
+      exit_on_error();
+    }
   }
 
   // Don't need to NUL terminate, vsprintf/vnsprintf does that for us
-  if(num_chars < 0)
-  {
-    // Errors occurred - report, and make sure string is terminated
-    fprintf(stderr, "Warning: strbuf_sprintf something went wrong..\n");
-    sbuf->buff[sbuf->len] = '\0';
-  }
-  else
-  {
-    // Update length
-    sbuf->len = pos + num_chars;
-  }
+
+  // Update length
+  sbuf->len = pos + (size_t)num_chars;
 
   return num_chars;
 }
@@ -555,27 +538,40 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 {
   _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_sprintf_noterm");
 
-  va_list argptr;
-  va_start(argptr, fmt);
-  int num_chars = vsnprintf(NULL, 0, fmt, argptr);
-  va_end(argptr);
-  
-  // Save overwritten char
-  char last_char = (pos+num_chars < sbuf->len) ? sbuf->buff[pos+num_chars] : 0;
+  char last_char;
   size_t len = sbuf->len;
 
+  // Call vsnprintf with NULL, 0 to get resulting string length without writing
+  va_list argptr;
   va_start(argptr, fmt);
-  num_chars = strbuf_vsprintf(sbuf, pos, fmt, argptr);
+  int nchars = vsnprintf(NULL, 0, fmt, argptr);
   va_end(argptr);
+
+  if(nchars < 0) {
+    fprintf(stderr, "Warning: strbuf_sprintf something went wrong..\n");
+    exit_on_error();
+  }
+
+  // Save overwritten char
+  last_char = (pos+(size_t)nchars < sbuf->len) ? sbuf->buff[pos+(size_t)nchars] : 0;
+
+  va_start(argptr, fmt);
+  nchars = strbuf_vsprintf(sbuf, pos, fmt, argptr);
+  va_end(argptr);
+
+  if(nchars < 0) {
+    fprintf(stderr, "Warning: strbuf_sprintf something went wrong..\n");
+    exit_on_error();
+  }
 
   // Restore length if shrunk, null terminate if extended
   if(sbuf->len < len) sbuf->len = len;
   else sbuf->buff[sbuf->len] = '\0';
 
   // Re-instate overwritten character
-  sbuf->buff[pos+num_chars] = last_char;
+  sbuf->buff[pos+(size_t)nchars] = last_char;
 
-  return num_chars;
+  return nchars;
 }
 
 
@@ -597,12 +593,12 @@ size_t strbuf_gzreadline(StrBuf *sbuf, gzFile file)
 // Reading a FILE
 size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in)
 {
-  return freadline_buf(file, in, &sbuf->buff, &sbuf->len, &sbuf->capacity);
+  return (size_t)freadline_buf(file, in, &sbuf->buff, &sbuf->len, &sbuf->capacity);
 }
 
 size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile file, buffer_t *in)
 {
-  return gzreadline_buf(file, in, &sbuf->buff, &sbuf->len, &sbuf->capacity);
+  return (size_t)gzreadline_buf(file, in, &sbuf->buff, &sbuf->len, &sbuf->capacity);
 }
 
 size_t strbuf_skipline(FILE* file)
@@ -617,12 +613,12 @@ size_t strbuf_gzskipline(gzFile file)
 
 size_t strbuf_skipline_buf(FILE* file, buffer_t *in)
 {
-  return fskipline_buf(file, in);
+  return (size_t)fskipline_buf(file, in);
 }
 
 size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in)
 {
-  return gzskipline_buf(file, in);
+  return (size_t)gzskipline_buf(file, in);
 }
 
 #define _func_read_nonempty(name,type_t,__readline)                            \
@@ -650,9 +646,9 @@ _func_read_nonempty(strbuf_gzreadline_nonempty,gzFile,strbuf_gzreadline)
     if(len == 0) return 0;                                                     \
     strbuf_ensure_capacity(sbuf, sbuf->len + len);                             \
     long read;                                                                 \
-    if((read = __read(file,sbuf->buff+sbuf->len,len)) <= 0) return 0;          \
-    sbuf->len += read;                                                         \
-    return read;                                                               \
+    if((read = (long)__read(file,sbuf->buff+sbuf->len,len)) <= 0) return 0;    \
+    sbuf->len += (size_t)read;                                                 \
+    return (size_t)read;                                                       \
   }
 
 _func_read(strbuf_gzread, gzFile, gzread2)
@@ -806,7 +802,7 @@ size_t string_count_char(const char* str, int c)
 }
 
 // Returns the number of strings resulting from the split
-long string_split(const char* split, const char* txt, char*** result)
+size_t string_split(const char* split, const char* txt, char*** result)
 {
   size_t split_len = strlen(split);
   size_t txt_len = strlen(txt);
@@ -841,14 +837,9 @@ long string_split(const char* split, const char* txt, char*** result)
   }
   
   const char* find = txt;
-  long count = 1; // must have at least one item
+  size_t count = 1; // must have at least one item
 
-  while((find = strstr(find, split)) != NULL)
-  {
-    //printf("Found1: '%s'\n", find);
-    count++;
-    find += split_len;
-  }
+  for(; (find = strstr(find, split)) != NULL; count++, find += split_len) {}
 
   // Create return array
   arr = malloc(count * sizeof(char*));
@@ -856,9 +847,11 @@ long string_split(const char* split, const char* txt, char*** result)
   count = 0;
   const char* last_position = txt;
 
+  size_t str_len;
+
   while((find = strstr(last_position, split)) != NULL)
   {
-    long str_len = find - last_position;
+    str_len = (size_t)(find - last_position);
 
     arr[count] = malloc((str_len+1) * sizeof(char));
     strncpy(arr[count], last_position, str_len);
@@ -869,11 +862,11 @@ long string_split(const char* split, const char* txt, char*** result)
   }
 
   // Copy last item
-  long str_len = txt + txt_len - last_position;
+  str_len = (size_t)(txt + txt_len - last_position);
   arr[count] = malloc((str_len+1) * sizeof(char));
 
   if(count == 0) strcpy(arr[count], txt);
-  else          strncpy(arr[count], last_position, str_len);
+  else           strncpy(arr[count], last_position, str_len);
 
   arr[count][str_len] = '\0';
   count++;
