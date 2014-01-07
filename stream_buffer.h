@@ -121,15 +121,16 @@ freadline(f,out)
   static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
   {                                                                            \
     if(*len+1 >= *size) *buf = realloc(*buf, *size *= 2);                      \
-    size_t n, total_read = 0;                                                  \
-    while(__gets(file, *buf+*len, *size-*len) != NULL)                         \
+    /* Don't read more than 2^32 bytes at once (gzgets limit) */               \
+    size_t r = *size-*len > UINT_MAX ? UINT_MAX : *size-*len, origlen = *len;  \
+    while(__gets(file, *buf+*len, r) != NULL)                                  \
     {                                                                          \
-      n = strlen(*buf+*len);                                                   \
-      *len += n; total_read += n;                                              \
-      if((*buf)[*len-1] == '\n') return total_read;                            \
+      *len += strlen(*buf+*len);                                               \
+      if((*buf)[*len-1] == '\n') return *len-origlen;                          \
       else *buf = realloc(*buf, *size *= 2);                                   \
+      r = *size-*len > UINT_MAX ? UINT_MAX : *size-*len;                       \
     }                                                                          \
-    return total_read;                                                         \
+    return *len-origlen;                                                       \
   }
 
 _func_readline(gzreadline,gzFile,gzgets2)

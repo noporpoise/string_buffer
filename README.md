@@ -370,8 +370,8 @@ buffered_input.h also provides generic buffered input functions
     // FILE Buffered reading
     int fgetc_buf(FILE* file, buffer_t *in)
     char* fgets_buf(FILE* file, buffer_t *in, char* str, unsigned int len)
-    size_t freadline_buf(FILE* file, buffer_t *in, char **buf, size_t *len, size_t *size)
-    size_t fskipline_buf(FILE* file, buffer_t *in)
+    int freadline_buf(FILE* file, buffer_t *in, char **buf, size_t *len, size_t *size)
+    int fskipline_buf(FILE* file, buffer_t *in)
 
     // gzFile readline
     size_t gzreadline(gzFile file, char **buf, size_t *len, size_t *size)
@@ -380,8 +380,8 @@ buffered_input.h also provides generic buffered input functions
     // gzFile Buffered reading
     int gzgetc_buf(gzFile file, buffer_t *in)
     char* gzgets_buf(gzFile file, buffer_t *in, char* str, unsigned int len)
-    size_t gzreadline_buf(gzFile file, buffer_t *in, char **buf, size_t *len, size_t *size)
-    size_t gzskipline_buf(gzFile file, buffer_t *in)
+    int gzreadline_buf(gzFile file, buffer_t *in, char **buf, size_t *len, size_t *size)
+    int gzskipline_buf(gzFile file, buffer_t *in)
 
 Other string functions
 ----------------------
