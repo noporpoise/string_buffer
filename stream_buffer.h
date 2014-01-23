@@ -38,7 +38,7 @@ static inline char buffer_init(buffer_t *b, size_t s)
   b->size = s <= 4 ? 4 : ROUNDUP2POW(s);
   if((b->b = malloc(b->size)) == NULL) return 0;
   b->begin = b->end = 1;
-  b->b[b->size-1] = 0;
+  b->b[b->end] = b->b[b->size-1] = 0;
   return 1;
 }
 
