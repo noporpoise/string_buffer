@@ -646,10 +646,10 @@ _func_read_nonempty(strbuf_gzreadline_nonempty,gzFile,strbuf_gzreadline)
   {                                                                            \
     if(len == 0) return 0;                                                     \
     strbuf_ensure_capacity(sbuf, sbuf->len + len);                             \
-    long read;                                                                 \
-    if((read = (long)__read(file,sbuf->buff+sbuf->len,len)) <= 0) return 0;    \
-    sbuf->len += (size_t)read;                                                 \
-    return (size_t)read;                                                       \
+    long nread;                                                                \
+    if((nread = (long)__read(file,sbuf->buff+sbuf->len,len)) <= 0) return 0;   \
+    sbuf->len += (size_t)nread;                                                \
+    return (size_t)nread;                                                      \
   }
 
 _func_read(strbuf_gzread, gzFile, gzread2)
