@@ -3,7 +3,7 @@ ifndef CC
 endif
 
 CFLAGS := -Wall -Wextra
-LIBFLAGS := -L . -lstrbuf -lz
+LIBFLAGS := -L. -lstrbuf -lz
 
 ifdef DEBUG
 	OPT = -O0 -DDEBUG=1 --debug -g -ggdb
