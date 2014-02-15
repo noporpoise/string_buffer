@@ -2,20 +2,21 @@ ifndef CC
   CC = gcc
 endif
 
-CFLAGS := -Wall -Wextra
-LIBFLAGS := -L. -lstrbuf -lz
+CFLAGS = -Wall -Wextra
+LIBFLAGS = -L. -lstrbuf -lz
 
 ifdef DEBUG
 	OPT = -O0 -DDEBUG=1 --debug -g -ggdb
 else
-	OPT = -O3
+	OPT = -O3 -flto
 endif
-
 
 all: libstrbuf.a strbuf_test
 
-libstrbuf.a: string_buffer.c string_buffer.h stream_buffer.h
-	$(CC) $(CFLAGS) $(OPT) -c string_buffer.c -o string_buffer.o
+string_buffer.o: string_buffer.c string_buffer.h stream_buffer.h
+	$(CC) $(CFLAGS) $(OPT) -fPIC -c string_buffer.c -o string_buffer.o
+
+libstrbuf.a: string_buffer.o
 	ar -csru libstrbuf.a string_buffer.o
 
 strbuf_test: strbuf_test.c libstrbuf.a
