@@ -22,8 +22,11 @@ libstrbuf.a: string_buffer.o
 strbuf_test: strbuf_test.c libstrbuf.a
 	$(CC) $(CFLAGS) $(OPT) strbuf_test.c -o strbuf_test $(LIBFLAGS)
 
+test: strbuf_test
+	./strbuf_test
+
 clean:
 	rm -rf string_buffer.o libstrbuf.a strbuf_test *.dSYM *.greg
 	rm -rf tmp.strbuf.*.txt tmp.strbuf.*.txt.gz
 
-.PHONY: all clean
+.PHONY: all clean test
