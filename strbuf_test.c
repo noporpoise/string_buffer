@@ -1431,5 +1431,5 @@ int main()
   // test_all_whitespace_old();
   // test_split_old();
   
-  return 0;
+  return total_tests_failed ? 1 : 0;
 }

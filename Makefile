@@ -22,13 +22,13 @@ LIBFLAGS = -L. -lstrbuf -lz
 all: libstrbuf.a strbuf_test
 
 string_buffer.o: string_buffer.c string_buffer.h stream_buffer.h
-	$(CC) $(CFLAGS) $(OBJFLAGS) $(OPT) -c string_buffer.c -o string_buffer.o
+	$(CC) $(CFLAGS) $(OBJFLAGS) -c string_buffer.c -o string_buffer.o
 
 libstrbuf.a: string_buffer.o
 	ar -csru libstrbuf.a string_buffer.o
 
 strbuf_test: strbuf_test.c libstrbuf.a
-	$(CC) $(CFLAGS) $(TGTFLAGS) $(OPT) strbuf_test.c -o strbuf_test $(LIBFLAGS)
+	$(CC) $(CFLAGS) $(TGTFLAGS) strbuf_test.c -o strbuf_test $(LIBFLAGS)
 
 test: strbuf_test
 	./strbuf_test
