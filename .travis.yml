@@ -7,4 +7,3 @@ compiler:
 
 install: make all
 script: make test
-
