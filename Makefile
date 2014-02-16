@@ -1,26 +1,33 @@
-ifndef CC
-  CC = gcc
-endif
-
-CFLAGS = -Wall -Wextra
-LIBFLAGS = -L. -lstrbuf -lz
+CC ?= gcc
 
 ifdef DEBUG
 	OPT = -O0 -DDEBUG=1 --debug -g -ggdb
 else
 	OPT = -O3 -flto
+	TGTFLAGS = -fwhole-program
+endif
+
+CFLAGS = -Wall -Wextra $(OPT)
+OBJFLAGS = -fPIC
+LIBFLAGS = -L. -lstrbuf -lz
+
+PLATFORM := $(shell uname)
+COMPILER := $(shell ($(CC) -v 2>&1) | tr A-Z a-z )
+
+ifneq (,$(findstring clang,$(COMPILER)))
+  TGTFLAGS := $(TGTFLAGS) -B/usr/lib/gold-ld
 endif
 
 all: libstrbuf.a strbuf_test
 
 string_buffer.o: string_buffer.c string_buffer.h stream_buffer.h
-	$(CC) $(CFLAGS) $(OPT) -fPIC -c string_buffer.c -o string_buffer.o
+	$(CC) $(CFLAGS) $(OBJFLAGS) $(OPT) -c string_buffer.c -o string_buffer.o
 
 libstrbuf.a: string_buffer.o
 	ar -csru libstrbuf.a string_buffer.o
 
 strbuf_test: strbuf_test.c libstrbuf.a
-	$(CC) $(CFLAGS) $(OPT) strbuf_test.c -o strbuf_test $(LIBFLAGS)
+	$(CC) $(CFLAGS) $(TGTFLAGS) $(OPT) strbuf_test.c -o strbuf_test $(LIBFLAGS)
 
 test: strbuf_test
 	./strbuf_test
