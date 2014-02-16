@@ -7,6 +7,8 @@ author: Isaac Turner <turner.isaac@gmail.com>
 license: Public Domain  
 Jan 2014
 
+[![Build Status](https://travis-ci.org/noporpoise/string_buffer.png?branch=master)](https://travis-ci.org/noporpoise/string_buffer)
+
 About
 =====
 
