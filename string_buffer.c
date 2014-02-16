@@ -83,7 +83,8 @@ StrBuf* strbuf_init(size_t capacity)
 {
   StrBuf* sbuf = malloc(sizeof(StrBuf));
   if(sbuf == NULL) return NULL;
-  return strbuf_alloc(sbuf, capacity);
+  if(strbuf_alloc(sbuf, capacity) == NULL) { free(sbuf); sbuf = NULL; }
+  return sbuf;
 }
 
 StrBuf* strbuf_create(const char* str)
@@ -102,8 +103,7 @@ StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity)
   sbuf->buff = malloc(capacity * sizeof(char));
   sbuf->len = 0;
   sbuf->capacity = capacity;
-  if(sbuf->buff == NULL) { free(sbuf); return NULL; }
-  return sbuf;
+  return sbuf->buff == NULL ? NULL : sbuf;
 }
 
 void strbuf_dealloc(StrBuf *sbuf)
