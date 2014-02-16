@@ -15,7 +15,7 @@ PLATFORM := $(shell uname)
 COMPILER := $(shell ($(CC) -v 2>&1) | tr A-Z a-z )
 
 ifneq (,$(findstring clang,$(COMPILER)))
-  TGTFLAGS := $(TGTFLAGS) -use-gold-plugin
+  TGTFLAGS := $(TGTFLAGS) -B/usr/lib/gold-ld -use-gold-plugin
 endif
 
 all: libstrbuf.a strbuf_test
