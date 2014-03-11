@@ -26,7 +26,7 @@
   #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
 #endif
 
-#define exit_on_error() ({ abort(); exit(EXIT_FAILURE); })
+#define exit_on_error() do { abort(); exit(EXIT_FAILURE); } while(0)
 
 /*********************/
 /*  Bounds checking  */

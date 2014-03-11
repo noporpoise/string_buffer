@@ -88,13 +88,13 @@ static inline void buffer_append_char(buffer_t *buf, char c)
 #define buffer_terminate(buf) ((buf)->b[(buf)->end] = 0)
 
 // Beware: buffer_chomp only removes 1 end-of-line at a time
-#define buffer_chomp(buf) ({                                                   \
+#define buffer_chomp(buf) do {                                                 \
   if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\n') {                       \
     (buf)->end--;                                                              \
     if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\r') (buf)->end--;         \
     (buf)->b[(buf)->end] = 0;                                                  \
   }                                                                            \
-})
+} while(0)
 
 /* 
 Unbuffered
@@ -177,11 +177,11 @@ freadline_buf(f,in,out)
 // offset of 1 so we can unget at least one char
 // Beware: read-in buffer is not null-terminated
 // Returns fail on error
-#define _READ_BUFFER(file,in,__read,fail) ({                                   \
+#define _READ_BUFFER(file,in,__read,fail) do{                                  \
   long _input = (long)__read(file,(in)->b+1,(in)->size-1);                     \
   if(_input < 0) return fail;                                                  \
   (in)->end = 1+(size_t)_input; (in)->begin = 1;                               \
-})
+} while(0)
 
 // Define getc for gzFile and FILE (buffered)
 #define _func_getc_buf(fname,type_t,__read)                                    \
@@ -225,7 +225,7 @@ static inline int ungetc_buf(int c, buffer_t *in)
       next = in->end - in->begin;                                              \
       if(remaining <= next) next = remaining;                                  \
       memcpy(ptr, in->b+in->begin, next);                                      \
-      in->begin += next; ptr += next;                                          \
+      in->begin += next; ptr = (char*)ptr + next;                              \
       if(remaining > next) { _READ_BUFFER(file,in,__read,-1); }                \
       remaining -= next;                                                       \
     }                                                                          \
