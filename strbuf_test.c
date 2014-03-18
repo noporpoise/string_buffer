@@ -126,6 +126,16 @@ void warn(const char *fmt, ...)
   fflush(stderr);
 }
 
+// Random string of length len plus a null terminator
+static void random_str(char *str, size_t len)
+{
+  size_t i, r = 0;
+  for(i = 0; i < len; i++) {
+    if(!(i & 7)) { r = (size_t)rand(); }
+    str[i] = ' ' + ((r&0xff)%('~'-' '));
+  }
+  str[len] = '\0';
+}
 
 /* Tests! */
 
@@ -908,12 +918,16 @@ void test_insert()
   ASSERT(strcmp(sbuf->buff, "abcbcdefdefghij") == 0);
   ASSERT_VALID(sbuf);
 
-  #define LONG_STR "TAGGACAGCAACATGACAGAAACACAATGAGGAAAATAGGAATATAGGATTCCCAAAATGCACAGTTTATATTTCAGTAGTGAGATTATGTTTCAAATGCCTATACTTAAAATAGAAAAGCATTGATATAACCGTGAACATGTGGACTGATGAGGAGAAAAGGGACCATTAAACAGAGGGGCAAATCAAACCTGAGAGAATCAATGTCAAAGCTGATGGTGAATGTACAGAGTATTTTAACTCCACACACCAGAGGCATTGCTGCCAGCACAGCACAAATAAATTCCCCTTGTCTTGTCACTGAGGAAATACGCAGTTGGGATGACAGTTCAGGTGAATGTGTGATTCACCTCTCATCAAAGAAAGGGTTCTACATTGATCAGCTAGGATACACACTTATGAAATAACAGCTAATCAAACTACTCATTTTTCCCATGATCACATGGGCTACTGCAGCACCTACATTTCTCCTATCCCCTCATTTGGCCTTGAATTAGAGC"
-  #define SHORT_STR "GGTTCTTCTTGGCTTCTTCTTTTCATTGCC"
-  strbuf_set(sbuf, LONG_STR);
-  strbuf_insert(sbuf, 0, SHORT_STR, strlen(SHORT_STR));
-  ASSERT(strcmp(sbuf->buff, SHORT_STR LONG_STR) == 0);
+  char *long_str = malloc(501);
+  random_str(long_str, 500);
+
+  const char *short_str = "GGTTCTTCTTGGCTTCTTCTTTTCATTGCC";
+  strbuf_set(sbuf, long_str);
+  strbuf_insert(sbuf, 0, short_str, strlen(short_str));
+  ASSERT(strncmp(sbuf->buff, short_str, strlen(short_str)) == 0);
+  ASSERT(strcmp(sbuf->buff+strlen(short_str), long_str) == 0);
   ASSERT_VALID(sbuf);
+  free(long_str);
 
   strbuf_free(sbuf);
   SUITE_END();
