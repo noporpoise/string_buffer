@@ -12,10 +12,6 @@ else
 	else
 		OPT = -O3
 	endif
-
-	ifneq (,$(findstring lto,$(COMPILER)))
-		OPT := -flto $(OPT)
-	endif
 endif
 
 CFLAGS = -Wall -Wextra -pedantic -std=c99 $(OPT)
