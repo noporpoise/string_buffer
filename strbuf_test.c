@@ -334,10 +334,11 @@ void test_buffered_reading()
   ASSERT(gzgets2(gzfile1, st3->text, 10) != NULL);
   ASSERT(gzgets_buf(gzfile2, gzbuf, st4->text, 10) != NULL);
 
-  ASSERT(strcmp(st1->text, "aaaaaaaaa") == 0);
-  ASSERT(strcmp(st2->text, "aaaaaaaaa") == 0);
-  ASSERT(strcmp(st3->text, "aaaaaaaaa") == 0);
-  ASSERT(strcmp(st4->text, "aaaaaaaaa") == 0);
+  const char expected[] = "aaaaaaaaa";
+  ASSERT(strcmp(st1->text, expected) == 0);
+  ASSERT(strcmp(st2->text, expected) == 0);
+  ASSERT(strcmp(st3->text, expected) == 0);
+  ASSERT(strcmp(st4->text, expected) == 0);
 
   st1->len = strlen(st1->text);
   st2->len = strlen(st1->text);
@@ -1069,10 +1070,11 @@ void test_sprintf()
                        "where it means %lu for some reason.  No other "
                        "profession is known to have its own dozen", 12, 13UL);
 
-  ASSERT(strcmp(sbuf->buff,
-                "hi. A dozen is another way of saying 12, except for bakers "
-                "where it means 13 for some reason.  No other "
-                "profession is known to have its own dozen") == 0);
+  const char ans[] = "hi. A dozen is another way of saying 12, except for bakers "
+                     "where it means 13 for some reason.  No other "
+                     "profession is known to have its own dozen";
+
+  ASSERT(strcmp(sbuf->buff, ans) == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_reset(sbuf);
