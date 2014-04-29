@@ -33,8 +33,15 @@
 /*********************/
 
 // Bounds check when inserting (pos <= len are valid)
-static void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
-                                 const char* file, int line, const char* func)
+#define _bounds_check_insert(sbuf,pos) \
+        _call_bounds_check_insert(sbuf,pos,__FILE__,__LINE__,__func__)
+#define _bounds_check_read(sbuf,pos) \
+        _call_bounds_check_read(sbuf,pos,__FILE__,__LINE__,__func__)
+#define _bounds_check_read_range(sbuf,start,len) \
+        _call_bounds_check_read_range(sbuf,start,len,__FILE__,__LINE__,__func__)
+
+static void _call_bounds_check_insert(const StrBuf* sbuf, size_t pos,
+                                      const char* file, int line, const char* func)
 {
   if(pos > sbuf->len)
   {
@@ -47,8 +54,8 @@ static void _bounds_check_insert(const StrBuf* sbuf, size_t pos,
 }
 
 // Bounds check when reading (pos < len are valid)
-static void _bounds_check_read(const StrBuf* sbuf, size_t pos,
-                               const char* file, int line, const char* func)
+static void _call_bounds_check_read(const StrBuf* sbuf, size_t pos,
+                                    const char* file, int line, const char* func)
 {
   if(pos >= sbuf->len)
   {
@@ -61,8 +68,8 @@ static void _bounds_check_read(const StrBuf* sbuf, size_t pos,
 }
 
 // Bounds check when reading a range (start+len < strlen is valid)
-static void _bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
-                                     const char* file, int line, const char* func)
+static void _call_bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
+                                          const char* file, int line, const char* func)
 {
   if(start + len > sbuf->len)
   {
@@ -151,13 +158,13 @@ char* strbuf_as_str(const StrBuf* sbuf)
 
 char strbuf_get_char(const StrBuf *sbuf, size_t index)
 {
-  _bounds_check_read(sbuf, index, __FILE__, __LINE__, "strbuf_get_char");
+  _bounds_check_read(sbuf, index);
   return sbuf->buff[index];
 }
 
 void strbuf_set_char(StrBuf *sbuf, size_t index, char c)
 {
-  _bounds_check_insert(sbuf, index, __FILE__, __LINE__, "strbuf_set_char");
+  _bounds_check_insert(sbuf, index);
 
   if(index == sbuf->len)
   {
@@ -298,7 +305,7 @@ void strbuf_reverse(StrBuf *sbuf)
 
 char* strbuf_substr(const StrBuf *sbuf, size_t start, size_t len)
 {
-  _bounds_check_read_range(sbuf, start, len, __FILE__, __LINE__, "strbuf_substr");
+  _bounds_check_read_range(sbuf, start, len);
 
   char* new_string = malloc((len+1) * sizeof(char));
   strncpy(new_string, sbuf->buff + start, len);
@@ -327,7 +334,7 @@ void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 {
   if(src == NULL || len == 0) return;
 
-  _bounds_check_insert(dst, dst_pos, __FILE__, __LINE__, "strbuf_copy");
+  _bounds_check_insert(dst, dst_pos);
 
   // Check if dst buffer can handle string
   // src may have pointed to dst, which has now moved
@@ -350,7 +357,7 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 {
   if(src == NULL || len == 0) return;
 
-  _bounds_check_insert(dst, dst_pos, __FILE__, __LINE__, "strbuf_insert");
+  _bounds_check_insert(dst, dst_pos);
 
   // Check if dst buffer has capacity for inserted string plus \0
   // src may have pointed to dst, which will be moved in realloc when
@@ -392,8 +399,7 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
                       const char *src, size_t src_len)
 {
-  _bounds_check_read_range(dst, dst_pos, dst_len, __FILE__, __LINE__,
-                           "strbuf_overwrite");
+  _bounds_check_read_range(dst, dst_pos, dst_len);
 
   if(src == NULL) return;
   if(dst_len == src_len) strbuf_copy(dst, dst_pos, src, src_len);
@@ -453,7 +459,7 @@ void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
 
 void strbuf_delete(StrBuf *sbuf, size_t pos, size_t len)
 {
-  _bounds_check_read_range(sbuf, pos, len, __FILE__, __LINE__, "strbuf_delete");
+  _bounds_check_read_range(sbuf, pos, len);
   memmove(sbuf->buff+pos, sbuf->buff+pos+len, sbuf->len-pos-len);
   sbuf->len -= len;
   sbuf->buff[sbuf->len] = '\0';
@@ -465,7 +471,7 @@ void strbuf_delete(StrBuf *sbuf, size_t pos, size_t len)
 
 int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
 {
-  _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_vsprintf");
+  _bounds_check_insert(sbuf, pos);
 
   // Length of remaining buffer
   size_t buf_len = sbuf->capacity - pos;
@@ -523,7 +529,7 @@ int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...)
 
 int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 {
-  _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_sprintf_at");
+  _bounds_check_insert(sbuf, pos);
 
   va_list argptr;
   va_start(argptr, fmt);
@@ -537,7 +543,7 @@ int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 // (vs at the end)
 int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 {
-  _bounds_check_insert(sbuf, pos, __FILE__, __LINE__, "strbuf_sprintf_noterm");
+  _bounds_check_insert(sbuf, pos);
 
   char last_char;
   size_t len = sbuf->len;
