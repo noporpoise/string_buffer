@@ -6,11 +6,11 @@ COMPILER := $(shell ($(CC) -v 2>&1) | tr A-Z a-z )
 ifdef DEBUG
 	OPT = -O0 -DDEBUG=1 --debug -g -ggdb
 else
-	ifneq (,$(findstring gcc,$(COMPILER)))
-		OPT = -O4
-		TGTFLAGS = -fwhole-program
-	else
+	ifneq (,$(findstring clang,$(COMPILER)))
 		OPT = -O3
+	else
+		OPT = -O4
+		# TGTFLAGS = -fwhole-program
 	endif
 endif
 
