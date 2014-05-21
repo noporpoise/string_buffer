@@ -747,6 +747,16 @@ void strbuf_rtrim(StrBuf *sbuf, const char* list)
 /* Other String Functions */
 /**************************/
 
+// Replace one char with another in a string. Return number of replacements made
+size_t string_char_replace(char *str, char from, char to)
+{
+  size_t n = 0;
+  for(; *str; str++) {
+    if(*str == from) { n++; *str = to; }
+  }
+  return n;
+}
+
 // Reverse a string region
 void string_reverse_region(char *str, size_t length)
 {

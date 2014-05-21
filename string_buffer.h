@@ -200,6 +200,9 @@ void strbuf_rtrim(StrBuf *sbuf, const char* list);
 /* Other String functions */
 /**************************/
 
+// Replace one char with another in a string. Return number of replacements made
+size_t string_char_replace(char *str, char from, char to);
+
 void string_reverse_region(char *str, size_t length);
 char string_is_all_whitespace(const char* s);
 char* string_next_nonwhitespace(char* s);
