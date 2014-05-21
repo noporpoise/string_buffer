@@ -42,6 +42,12 @@ static inline char buffer_init(buffer_t *b, size_t s)
   return 1;
 }
 
+static inline void buffer_dealloc(buffer_t *b)
+{
+  if(b->b) free(b->b);
+  b->begin = b->end = b->size = 0;
+}
+
 static inline buffer_t* buffer_new(size_t s)
 {
   buffer_t *b = (buffer_t*)malloc(sizeof(buffer_t));
@@ -50,7 +56,7 @@ static inline buffer_t* buffer_new(size_t s)
   else { free(b); return NULL; } /* couldn't malloc */
 }
 
-#define buffer_free(buf) do{free((buf)->b); free(buf); } while(0)
+#define buffer_free(buf) do{ free((buf)->b); free(buf); } while(0)
 
 static inline void _ensure_capacity(char **buf, size_t *size, size_t len)
 {
