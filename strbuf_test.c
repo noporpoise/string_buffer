@@ -1377,6 +1377,20 @@ void test_safe_ncpy()
   ASSERT(out[strlen(input)-1] == 0); // copied all but last byte
   ASSERT(out[strlen(out)+1] == 1); // Haven't modified output buffer after string
 
+  // Test copying empty string
+  memset(out, 1, sizeof(out));
+  string_safe_ncpy(out, "", 0);
+  ASSERT(out[0] == 1); // haven't changed out
+  string_safe_ncpy(out, "", 1);
+  ASSERT(out[0] == '\0'); // add NULL byte to out[0]
+  ASSERT(out[1] == 1); // haven't changed out[1]
+  memset(out, 1, sizeof(out));
+  string_safe_ncpy(out, "", 2);
+  ASSERT(out[0] == '\0'); // add NULL byte to out[0]
+  ASSERT(out[1] == 1); // haven't changed out[1]
+  ASSERT(out[2] == 1); // haven't changed out[2]
+  ASSERT(out[3] == 1); // haven't changed out[3]
+
   SUITE_END();
 }
 

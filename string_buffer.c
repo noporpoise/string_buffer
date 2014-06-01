@@ -754,9 +754,8 @@ void strbuf_rtrim(StrBuf *sbuf, const char* list)
 char* string_safe_ncpy(char *restrict dst, const char *restrict src, size_t n)
 {
   if(n == 0) return dst;
-  if(n == 1) { dst[0] = '\0'; return dst; }
 
-  // The Open Group:
+  // From The Open Group:
   //   The memccpy() function copies bytes from memory area s2 into s1, stopping
   //   after the first occurrence of byte c is copied, or after n bytes are copied,
   //   whichever comes first. If copying takes place between objects that overlap,
