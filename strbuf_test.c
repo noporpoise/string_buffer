@@ -1340,6 +1340,46 @@ void test_trim()
   SUITE_END();
 }
 
+void test_safe_ncpy()
+{
+  SUITE_START("using string_safe_ncpy()");
+
+  const char input[] = "I'm sorry Dave I can't do that";
+  char out[100];
+
+  memset(out, 1, sizeof(out));
+  string_safe_ncpy(out, input, 0);
+  ASSERT(out[0] == 1); // haven't changed out
+  string_safe_ncpy(out, input, 1);
+  ASSERT(out[0] == 0); // added NULL byte to out[0]
+  ASSERT(out[1] == 1); // haven't changed out[1]
+  string_safe_ncpy(out, input, 2);
+  ASSERT(out[0] == 'I'); // copied one byte to out[0]
+  ASSERT(out[1] == 0); // added NULL byte to out[1]
+  ASSERT(out[2] == 1); // haven't changed out[2]
+
+  // Copy whole string
+  memset(out, 1, sizeof(out));
+  string_safe_ncpy(out, input, sizeof(out));
+  ASSERT(strcmp(out,input) == 0);
+  ASSERT(out[strlen(out)+1] == 1);
+
+  // Copy whole string
+  memset(out, 1, sizeof(out));
+  string_safe_ncpy(out, input, strlen(input)+1);
+  ASSERT(strcmp(out,input) == 0); // copied string+null byte
+  ASSERT(out[strlen(out)+1] == 1); // Haven't modified output buffer after string
+
+  // Copy whole string except last byte
+  memset(out, 1, sizeof(out));
+  string_safe_ncpy(out, input, strlen(input));
+  ASSERT(strncmp(out,input,strlen(input)-1) == 0);
+  ASSERT(out[strlen(input)-1] == 0); // copied all but last byte
+  ASSERT(out[strlen(out)+1] == 1); // Haven't modified output buffer after string
+
+  SUITE_END();
+}
+
 /* Non-function tests */
 
 void test_sscanf()
@@ -1441,6 +1481,7 @@ int main()
   test_read_nonempty();
 
   test_sscanf();
+  test_safe_ncpy();
 
   printf("\n");
   TEST_STATS();

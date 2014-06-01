@@ -747,6 +747,27 @@ void strbuf_rtrim(StrBuf *sbuf, const char* list)
 /* Other String Functions */
 /**************************/
 
+// `n` is the maximum number of bytes to copy including the NULL byte
+// copies at most n bytes from `src` to `dst`
+// Always appends a NULL terminating byte, unless n is zero.
+// Returns a pointer to dst
+char* string_safe_ncpy(char *restrict dst, const char *restrict src, size_t n)
+{
+  if(n == 0) return dst;
+  if(n == 1) { dst[0] = '\0'; return dst; }
+
+  // The Open Group:
+  //   The memccpy() function copies bytes from memory area s2 into s1, stopping
+  //   after the first occurrence of byte c is copied, or after n bytes are copied,
+  //   whichever comes first. If copying takes place between objects that overlap,
+  //   the behaviour is undefined.
+  // Returns NULL if character c was not found in the copied memory
+  if(memccpy(dst, src, '\0', n-1) == NULL)
+    dst[n-1] = '\0';
+
+  return dst;
+}
+
 // Replace one char with another in a string. Return number of replacements made
 size_t string_char_replace(char *str, char from, char to)
 {
