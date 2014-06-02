@@ -206,6 +206,11 @@ void strbuf_rtrim(StrBuf *sbuf, const char* list);
 // Returns a pointer to dst
 char* string_safe_ncpy(char *dst, const char *src, size_t n);
 
+// Replaces `sep` with \0 in str
+// Returns number of occurances of `sep` character in `str`
+// Stores `nptrs` pointers in `ptrs`
+size_t string_split_str(char *str, char sep, char **ptrs, size_t nptrs);
+
 // Replace one char with another in a string. Return number of replacements made
 size_t string_char_replace(char *str, char from, char to);
 

@@ -767,6 +767,25 @@ char* string_safe_ncpy(char *dst, const char *src, size_t n)
   return dst;
 }
 
+// Replaces `sep` with \0 in str
+// Returns number of occurances of `sep` character in `str`
+// Stores `nptrs` pointers in `ptrs`
+size_t string_split_str(char *str, char sep, char **ptrs, size_t nptrs)
+{
+  size_t n = 1;
+
+  if(*str == '\0') return 0;
+  if(nptrs > 0) ptrs[0] = str;
+
+  while((str = strchr(str, sep)) != NULL) {
+    *str = '\0';
+    str++;
+    if(n < nptrs) ptrs[n] = str;
+    n++;
+  }
+  return n;
+}
+
 // Replace one char with another in a string. Return number of replacements made
 size_t string_char_replace(char *str, char from, char to)
 {
@@ -829,11 +848,10 @@ size_t string_chomp(char* str, size_t len)
 size_t string_count_char(const char* str, int c)
 {
   size_t count = 0;
-  const char *tmp = str;
 
-  while((tmp = strchr(tmp, c)) != NULL)
+  while((str = strchr(str, c)) != NULL)
   {
-    tmp++;
+    str++;
     count++;
   }
 

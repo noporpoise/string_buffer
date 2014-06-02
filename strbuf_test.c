@@ -1394,6 +1394,81 @@ void test_safe_ncpy()
   SUITE_END();
 }
 
+void test_split_str()
+{
+  SUITE_START("using string_split_str()");
+
+  const char input[] = "I'm sorry Dave I can't do that...";
+  char buf[100];
+
+  char *ptrs[10];
+  size_t i, n;
+
+  memset(ptrs, 0, sizeof(ptrs));
+  memcpy(buf, input, sizeof(input));
+  n = string_split_str(buf, ' ', ptrs, 3);
+  ASSERT(n == 7);
+  ASSERT(strcmp(ptrs[0],"I'm") == 0);
+  ASSERT(strcmp(ptrs[1],"sorry") == 0);
+  ASSERT(strcmp(ptrs[2],"Dave") == 0);
+
+  for(i = 3; i < sizeof(ptrs) / sizeof(ptrs[0]); i++)
+    ASSERT(ptrs[i] == NULL);
+
+  memset(ptrs, 0, sizeof(ptrs));
+  memcpy(buf, input, sizeof(input));
+  n = string_split_str(buf, ' ', ptrs, 10);
+  ASSERT(n == 7);
+  ASSERT(strcmp(ptrs[0],"I'm") == 0);
+  ASSERT(strcmp(ptrs[1],"sorry") == 0);
+  ASSERT(strcmp(ptrs[2],"Dave") == 0);
+  ASSERT(strcmp(ptrs[3],"I") == 0);
+  ASSERT(strcmp(ptrs[4],"can't") == 0);
+  ASSERT(strcmp(ptrs[5],"do") == 0);
+  ASSERT(strcmp(ptrs[6],"that...") == 0);
+
+  for(i = 7; i < sizeof(ptrs) / sizeof(ptrs[0]); i++)
+    ASSERT(ptrs[i] == NULL);
+
+  // Test empty strs
+  memset(ptrs, 0, sizeof(ptrs));
+  strcpy(buf, "");
+  n = string_split_str(buf, ' ', ptrs, 10);
+  ASSERT(n == 0);
+
+  for(i = 0; i < sizeof(ptrs) / sizeof(ptrs[0]); i++)
+    ASSERT(ptrs[i] == NULL);
+
+  // Test separators at beginning and end
+  memset(ptrs, 0, sizeof(ptrs));
+  strcpy(buf, ":");
+  n = string_split_str(buf, ':', ptrs, 10);
+  ASSERT(n == 2);
+  ASSERT(strcmp(ptrs[0],"") == 0);
+  ASSERT(strcmp(ptrs[1],"") == 0);
+
+  for(i = 2; i < sizeof(ptrs) / sizeof(ptrs[0]); i++)
+    ASSERT(ptrs[i] == NULL);
+
+  // Test separators at beginning and end
+  memset(ptrs, 0, sizeof(ptrs));
+  strcpy(buf, "::and::this::");
+  n = string_split_str(buf, ':', ptrs, 10);
+  ASSERT(n == 7);
+  ASSERT(strcmp(ptrs[0],"") == 0);
+  ASSERT(strcmp(ptrs[1],"") == 0);
+  ASSERT(strcmp(ptrs[2],"and") == 0);
+  ASSERT(strcmp(ptrs[3],"") == 0);
+  ASSERT(strcmp(ptrs[4],"this") == 0);
+  ASSERT(strcmp(ptrs[5],"") == 0);
+  ASSERT(strcmp(ptrs[6],"") == 0);
+
+  for(i = 7; i < sizeof(ptrs) / sizeof(ptrs[0]); i++)
+    ASSERT(ptrs[i] == NULL);
+
+  SUITE_END();
+}
+
 /* Non-function tests */
 
 void test_sscanf()
@@ -1495,7 +1570,10 @@ int main()
   test_read_nonempty();
 
   test_sscanf();
+
+  // string_ functions
   test_safe_ncpy();
+  test_split_str();
 
   printf("\n");
   TEST_STATS();
