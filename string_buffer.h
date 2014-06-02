@@ -204,7 +204,7 @@ void strbuf_rtrim(StrBuf *sbuf, const char* list);
 // copies at most n bytes from `src` to `dst`
 // Always appends a NULL terminating byte, unless n is zero.
 // Returns a pointer to dst
-char* string_safe_ncpy(char *restrict dst, const char *restrict src, size_t n);
+char* string_safe_ncpy(char *dst, const char *src, size_t n);
 
 // Replace one char with another in a string. Return number of replacements made
 size_t string_char_replace(char *str, char from, char to);

@@ -751,7 +751,7 @@ void strbuf_rtrim(StrBuf *sbuf, const char* list)
 // copies at most n bytes from `src` to `dst`
 // Always appends a NULL terminating byte, unless n is zero.
 // Returns a pointer to dst
-char* string_safe_ncpy(char *restrict dst, const char *restrict src, size_t n)
+char* string_safe_ncpy(char *dst, const char *src, size_t n)
 {
   if(n == 0) return dst;
 
