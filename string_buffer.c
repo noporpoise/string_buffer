@@ -116,8 +116,7 @@ StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity)
 void strbuf_dealloc(StrBuf *sbuf)
 {
   free(sbuf->buff);
-  sbuf->buff = NULL;
-  sbuf->capacity = 0;
+  memset(sbuf, 0, sizeof(StrBuf));
 }
 
 void strbuf_reset(StrBuf* sbuf)
