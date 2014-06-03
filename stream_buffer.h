@@ -44,8 +44,8 @@ static inline char buffer_init(buffer_t *b, size_t s)
 
 static inline void buffer_dealloc(buffer_t *b)
 {
-  if(b->b) { free(b->b); b->b = NULL; }
-  b->begin = b->end = b->size = 0;
+  free(b->b);
+  memset(b, 0, sizeof(buffer_t));
 }
 
 static inline buffer_t* buffer_new(size_t s)
