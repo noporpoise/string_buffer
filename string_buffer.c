@@ -844,7 +844,7 @@ size_t string_chomp(char* str, size_t len)
 }
 
 // Returns count
-size_t string_count_char(const char* str, int c)
+size_t string_count_char(const char* str, char c)
 {
   size_t count = 0;
 

@@ -220,7 +220,7 @@ char* string_next_nonwhitespace(char* s);
 char* string_trim(char* str);
 // Chomp a string, returns new length
 size_t string_chomp(char* str, size_t len);
-size_t string_count_char(const char* str, int c);
+size_t string_count_char(const char* str, char c);
 size_t string_split(const char* split, const char* txt, char*** result);
 
 #endif
