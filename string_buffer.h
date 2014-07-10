@@ -27,11 +27,16 @@ typedef struct
 #define strbuf_new()    strbuf_init(256)
 #define strbuf_len(sb)  ((sb)->len)
 #define strbuf_dup(sb)  strbuf_as_str(sb)
+
 // Copy a StrBuf to the end of this StrBuf
 #define strbuf_append(s1,s2)      strbuf_append_strn(s1, (s2)->buff, (s2)->len)
+
 // Copy a character array to the end of this StrBuf
 #define strbuf_append_str(s1,s2)  strbuf_append_strn(s1, s2, strlen(s2))
 #define strbuf_append_buff(s1,s2) strbuf_append(s1,s2)
+
+// Clear the content of an existing StrBuf (sets size to 0)
+#define strbuf_reset(sb) ((sb)->buff[(sb)->len = 0] = '\0')
 
 //
 // Creation, reset, free and memory expansion
@@ -54,9 +59,6 @@ void strbuf_dealloc(StrBuf *sbuf);
 
 // Clone a buffer (including content)
 StrBuf* strbuf_clone(const StrBuf* sbuf);
-
-// Clear the content of an existing StrBuf (sets size to 0)
-void strbuf_reset(StrBuf* sbuf);
 
 //
 // Resizing
@@ -83,6 +85,9 @@ void strbuf_set_char(StrBuf *sbuf, size_t index, char c);
 
 // Set string buffer to contain a given string
 void strbuf_set(StrBuf *sbuf, const char *str);
+
+// Set string buffer to match existing string buffer
+void strbuf_set_buff(StrBuf *dst, const StrBuf *src);
 
 // Get a copy of this StrBuf as a char array
 // Returns NULL if not enough memory

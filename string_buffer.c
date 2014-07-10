@@ -40,8 +40,9 @@
 #define _bounds_check_read_range(sbuf,start,len) \
         _call_bounds_check_read_range(sbuf,start,len,__FILE__,__LINE__,__func__)
 
-static void _call_bounds_check_insert(const StrBuf* sbuf, size_t pos,
-                                      const char* file, int line, const char* func)
+static inline
+void _call_bounds_check_insert(const StrBuf* sbuf, size_t pos,
+                               const char* file, int line, const char* func)
 {
   if(pos > sbuf->len)
   {
@@ -54,8 +55,9 @@ static void _call_bounds_check_insert(const StrBuf* sbuf, size_t pos,
 }
 
 // Bounds check when reading (pos < len are valid)
-static void _call_bounds_check_read(const StrBuf* sbuf, size_t pos,
-                                    const char* file, int line, const char* func)
+static inline
+void _call_bounds_check_read(const StrBuf* sbuf, size_t pos,
+                             const char* file, int line, const char* func)
 {
   if(pos >= sbuf->len)
   {
@@ -68,8 +70,9 @@ static void _call_bounds_check_read(const StrBuf* sbuf, size_t pos,
 }
 
 // Bounds check when reading a range (start+len < strlen is valid)
-static void _call_bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
-                                          const char* file, int line, const char* func)
+static inline
+void _call_bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
+                                   const char* file, int line, const char* func)
 {
   if(start + len > sbuf->len)
   {
@@ -117,12 +120,6 @@ void strbuf_dealloc(StrBuf *sbuf)
 {
   free(sbuf->buff);
   memset(sbuf, 0, sizeof(StrBuf));
-}
-
-void strbuf_reset(StrBuf* sbuf)
-{
-  sbuf->len = 0;
-  sbuf->buff[0] = '\0';
 }
 
 void strbuf_free(StrBuf* sbuf)
@@ -217,8 +214,8 @@ void strbuf_ensure_capacity(StrBuf *sbuf, size_t size)
   }
 }
 
-static void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t size,
-                                        const char **ptr)
+static inline
+void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **ptr)
 {
   if(sbuf->capacity <= size+1)
   {
@@ -269,6 +266,14 @@ void strbuf_set(StrBuf *sbuf, const char *str)
 
   sbuf->buff[len] = '\0';
   sbuf->len = len;
+}
+
+// Set string buffer to match existing string buffer
+void strbuf_set_buff(StrBuf *dst, const StrBuf *src)
+{
+  strbuf_ensure_capacity(dst, src->len+1);
+  memcpy(dst->buff, src->buff, src->len);
+  dst->buff[dst->len = src->len] = '\0';
 }
 
 // src may point to this buffer
