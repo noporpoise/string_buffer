@@ -16,102 +16,130 @@
 
 #include "stream_buffer.h"
 
-typedef struct
-{
-  char *buff;
-  size_t len; // length of the string
-  size_t capacity; // buffer size - includes '\0' (size >= len+1)
-} StrBuf;
-
-// MACROS
-#define strbuf_new()    strbuf_init(256)
-#define strbuf_len(sb)  ((sb)->len)
-#define strbuf_dup(sb)  strbuf_as_str(sb)
-
-// Copy a StrBuf to the end of this StrBuf
-#define strbuf_append(s1,s2)      strbuf_append_strn(s1, (s2)->buff, (s2)->len)
-
-// Copy a character array to the end of this StrBuf
-#define strbuf_append_str(s1,s2)  strbuf_append_strn(s1, s2, strlen(s2))
-#define strbuf_append_buff(s1,s2) strbuf_append(s1,s2)
-
-// Clear the content of an existing StrBuf (sets size to 0)
-#define strbuf_reset(sb) ((sb)->buff[(sb)->len = 0] = '\0')
+typedef CharBuffer StrBuf;
 
 //
 // Creation, reset, free and memory expansion
 //
 
-// Constructors
-StrBuf* strbuf_init(size_t size);
-StrBuf* strbuf_create(const char* str);
-
-// Destructor
-void strbuf_free(StrBuf* sbuf);
+// Constructors / Destructors
+StrBuf* strbuf_new(size_t len);
+#define strbuf_free(sb) buffer_free(sb)
 
 // Place a string buffer into existing memory. Example:
 //   StrBuf buf;
 //   strbuf_alloc(&buf, 100);
 //   ...
 //   strbuf_dealloc(&buf);
-StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity);
-void strbuf_dealloc(StrBuf *sbuf);
+StrBuf* strbuf_alloc(StrBuf *sb, size_t len);
+#define strbuf_dealloc(sb) buffer_dealloc(sb)
 
-// Clone a buffer (including content)
-StrBuf* strbuf_clone(const StrBuf* sbuf);
+// Copy a string or existing string buffer
+StrBuf* strbuf_create(const char *str);
+StrBuf* strbuf_clone(const StrBuf *sb);
+
+// Clear the content of an existing StrBuf (sets size to 0)
+#define strbuf_reset(__sb) do {  \
+  StrBuf *_sb = (__sb);          \
+  _sb->b[_sb->end = 0] = 0;      \
+} while(0)
 
 //
 // Resizing
 //
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
-void strbuf_ensure_capacity(StrBuf *sbuf, size_t size);
+#define strbuf_ensure_capacity(sb,size) buffer_ensure_capacity(sb,size)
 
-// Shorten a string
-void strbuf_shrink(StrBuf *sbuf, size_t new_len);
-
-// Change how much memory is used to hold the buffer.  Can be used to grow or
-// shrink buffer size.  Always calls realloc. Returns 1 on success, 0 on failure.
-char strbuf_resize(StrBuf *sbuf, size_t new_size);
+// Resize the buffer to have capacity to hold a string of length new_len
+// (+ a null terminating character).  Can also be used to downsize the buffer's
+// memory usage.  Returns 1 on success, 0 on failure.
+char strbuf_resize(StrBuf *sb, size_t new_len);
 
 //
 // Useful String functions
 //
 
-// Get a char (index < strlen(sbuf))
-char strbuf_get_char(const StrBuf *sbuf, size_t index);
-// Can set a char <= strlen(sbuf->buff)
-void strbuf_set_char(StrBuf *sbuf, size_t index, char c);
+#define strbuf_len(sb)  ((sb)->end)
+
+#define strbuf_char(sb,idx) (sb)->b[idx]
+
+// Note: in MACROs we use local variables to avoid multiple evaluation of param
 
 // Set string buffer to contain a given string
-void strbuf_set(StrBuf *sbuf, const char *str);
+#define strbuf_set(__sb,__str) do         \
+{                                         \
+  StrBuf     *_sb  = (__sb);              \
+  const char *_str = (__str);             \
+  size_t _s = strlen(_str);               \
+  buffer_ensure_capacity(_sb,_s);         \
+  memcpy(_sb->b, _str, _s);               \
+  _sb->b[_sb->end = _s] = '\0';           \
+} while(0)
 
 // Set string buffer to match existing string buffer
-void strbuf_set_buff(StrBuf *dst, const StrBuf *src);
-
-// Get a copy of this StrBuf as a char array
-// Returns NULL if not enough memory
-char* strbuf_as_str(const StrBuf* sbuf);
+#define strbuf_set_buff(__dst,__src) do      \
+{                                            \
+  StrBuf       *_dst = (__dst);              \
+  const StrBuf *_src = (__src);              \
+  buffer_ensure_capacity(_dst, _src->end);   \
+  memcpy(_dst->b, _src->b, _src->end);       \
+  _dst->b[_dst->end = _src->end] = '\0';     \
+} while(0)
 
 // Add a character to the end of this StrBuf
-void strbuf_append_char(StrBuf* sbuf, char c);
+#define strbuf_append_char(__sb,__c) do     \
+{                                           \
+  StrBuf *_sb = (__sb);                     \
+  char    _c  = (__c);                      \
+  buffer_ensure_capacity(_sb, _sb->end+1);  \
+  _sb->b[_sb->end] = _c;                    \
+  _sb->b[++_sb->end] = '\0';                \
+} while(0)
+
 // Copy N characters from a character array to the end of this StrBuf
-void strbuf_append_strn(StrBuf* sbuf, const char* txt, size_t len);
+#define strbuf_append_strn(__sb,__str,__n) do \
+{                                             \
+  StrBuf     *_sb  = (__sb);                  \
+  const char *_str = (__str);                 \
+  size_t      _n   = (__n);                   \
+  buffer_ensure_capacity(_sb, _sb->end+_n);   \
+  memcpy(_sb->b+_sb->end, _str, _n);          \
+  _sb->b[_sb->end = _sb->end+_n] = '\0';      \
+} while(0)
+
+// Copy a character array to the end of this StrBuf
+// name char* _str2 since strbuf_append_strn uses _str
+#define strbuf_append_str(__sb,__str) do {        \
+  const char *_str2 = (__str);                    \
+  strbuf_append_strn(__sb, _str2, strlen(_str2)); \
+} while(0)
+
+#define strbuf_append_buff(__sb1,__sb2) do {     \
+  const StrBuf *_sb2 = (__sb2);                  \
+  strbuf_append_strn(__sb1, _sb2->b, _sb2->end); \
+} while(0)
+
+#define strbuf_shrink(__sb,__len) do {                    \
+  StrBuf *_sb = (__sb); _sb->b[_sb->end = (__len)] = 0;   \
+} while(0);
+
+#define strbuf_dup_str(sb) strdup((sb)->b)
 
 // Remove \r and \n characters from the end of this StrBuf
 // Returns the number of characters removed
-size_t strbuf_chomp(StrBuf *sbuf);
+size_t strbuf_chomp(StrBuf *sb);
 
 // Reverse a string
-void strbuf_reverse(StrBuf *sbuf);
+void strbuf_reverse(StrBuf *sb);
 
 // Get a substring as a new null terminated char array
 // (remember to free the returned char* after you're done with it!)
-char* strbuf_substr(const StrBuf *sbuf, size_t start, size_t len);
+char* strbuf_substr(const StrBuf *sb, size_t start, size_t len);
 
 // Change to upper or lower case
-void strbuf_to_uppercase(StrBuf *sbuf);
-void strbuf_to_lowercase(StrBuf *sbuf);
+void strbuf_to_uppercase(StrBuf *sb);
+void strbuf_to_lowercase(StrBuf *sb);
 
 // Copy a string to this StrBuf, overwriting any existing characters
 // Note: dst_pos + len can be longer the the current dst StrBuf
@@ -125,39 +153,39 @@ void strbuf_insert(StrBuf *dst, size_t dst_pos,
 // Overwrite dst_pos..(dst_pos+dst_len-1) with src_len chars from src
 // if dst_len != src_len, content to the right of dst_len is shifted
 // Example:
-//   strbuf_set(sbuf, "aaabbccc");
+//   strbuf_set(sb, "aaabbccc");
 //   char *data = "xxx";
-//   strbuf_overwrite(sbuf,3,2,data,strlen(data));
-//   // sbuf is now "aaaxxxccc"
-//   strbuf_overwrite(sbuf,3,2,"_",1);
-//   // sbuf is now "aaa_ccc"
+//   strbuf_overwrite(sb,3,2,data,strlen(data));
+//   // sb is now "aaaxxxccc"
+//   strbuf_overwrite(sb,3,2,"_",1);
+//   // sb is now "aaa_ccc"
 void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
                       const char *src, size_t src_len);
 
 // Remove characters from the buffer
-//   strbuf_set(sbuf, "aaaBBccc");
-//   strbuf_delete(sbuf, 3, 2);
-//   // sbuf is now "aaaccc"
-void strbuf_delete(StrBuf *sbuf, size_t pos, size_t len);
+//   strbuf_set(sb, "aaaBBccc");
+//   strbuf_delete(sb, 3, 2);
+//   // sb is now "aaaccc"
+void strbuf_delete(StrBuf *sb, size_t pos, size_t len);
 
 //
 // sprintf
 //
 
 // sprintf to a StrBuf (adds string terminator after sprint)
-int strbuf_sprintf(StrBuf *sbuf, const char *fmt, ...)
+int strbuf_sprintf(StrBuf *sb, const char *fmt, ...)
   __attribute__ ((format(printf, 2, 3)));
 
-int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char *fmt, ...)
+int strbuf_sprintf_at(StrBuf *sb, size_t pos, const char *fmt, ...)
   __attribute__ ((format(printf, 3, 4)));
 
-int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char *fmt, va_list argptr)
+int strbuf_vsprintf(StrBuf *sb, size_t pos, const char *fmt, va_list argptr)
   __attribute__ ((format(printf, 3, 0)));
 
 // sprintf without terminating character
 // Does not prematurely end the string if you sprintf within the string
 // (terminates string if sprintf to the end)
-int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char *fmt, ...)
+int strbuf_sprintf_noterm(StrBuf *sb, size_t pos, const char *fmt, ...)
   __attribute__ ((format(printf, 3, 4)));
 
 //
@@ -165,20 +193,20 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char *fmt, ...)
 //
 
 // Reading a FILE
-size_t strbuf_reset_readline(StrBuf *sbuf, FILE *file);
-size_t strbuf_readline(StrBuf *sbuf, FILE *file);
+size_t strbuf_reset_readline(StrBuf *sb, FILE *file);
+size_t strbuf_readline(StrBuf *sb, FILE *file);
 size_t strbuf_skipline(FILE *file);
-size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in);
-size_t strbuf_skipline_buf(FILE* file, buffer_t *in);
-size_t strbuf_read(StrBuf *sbuf, FILE *file, size_t len);
+size_t strbuf_readline_buf(StrBuf *sb, FILE *file, CharBuffer *in);
+size_t strbuf_skipline_buf(FILE* file, CharBuffer *in);
+size_t strbuf_read(StrBuf *sb, FILE *file, size_t len);
 
 // Reading a gzFile
-size_t strbuf_reset_gzreadline(StrBuf *sbuf, gzFile gz_file);
-size_t strbuf_gzreadline(StrBuf *sbuf, gzFile gz_file);
+size_t strbuf_reset_gzreadline(StrBuf *sb, gzFile gz_file);
+size_t strbuf_gzreadline(StrBuf *sb, gzFile gz_file);
 size_t strbuf_gzskipline(gzFile gz_file);
-size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile gz_file, buffer_t *in);
-size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in);
-size_t strbuf_gzread(StrBuf *sbuf, gzFile gz_file, size_t len);
+size_t strbuf_gzreadline_buf(StrBuf *sb, gzFile gz_file, CharBuffer *in);
+size_t strbuf_gzskipline_buf(gzFile file, CharBuffer *in);
+size_t strbuf_gzread(StrBuf *sb, gzFile gz_file, size_t len);
 
 // Read a line that has at least one character that is not \r or \n
 // these functions do not call reset before reading
@@ -191,15 +219,15 @@ size_t strbuf_gzreadline_nonempty(StrBuf *line, gzFile gz);
 //
 
 // Trim whitespace characters from the start and end of a string
-void strbuf_trim(StrBuf *sbuf);
+void strbuf_trim(StrBuf *sb);
 
-// Trim the characters listed in `list` from the left of `sbuf`
+// Trim the characters listed in `list` from the left of `sb`
 // `list` is a null-terminated string of characters
-void strbuf_ltrim(StrBuf *sbuf, const char* list);
+void strbuf_ltrim(StrBuf *sb, const char *list);
 
-// Trim the characters listed in `list` from the right of `sbuf`
+// Trim the characters listed in `list` from the right of `sb`
 // `list` is a null-terminated string of characters
-void strbuf_rtrim(StrBuf *sbuf, const char* list);
+void strbuf_rtrim(StrBuf *sb, const char *list);
 
 /**************************/
 /* Other String functions */
@@ -220,12 +248,12 @@ size_t string_split_str(char *str, char sep, char **ptrs, size_t nptrs);
 size_t string_char_replace(char *str, char from, char to);
 
 void string_reverse_region(char *str, size_t length);
-char string_is_all_whitespace(const char* s);
-char* string_next_nonwhitespace(char* s);
-char* string_trim(char* str);
+char string_is_all_whitespace(const char *s);
+char* string_next_nonwhitespace(char *s);
+char* string_trim(char *str);
 // Chomp a string, returns new length
-size_t string_chomp(char* str, size_t len);
-size_t string_count_char(const char* str, char c);
-size_t string_split(const char* split, const char* txt, char*** result);
+size_t string_chomp(char *str, size_t len);
+size_t string_count_char(const char *str, char c);
+size_t string_split(const char *split, const char *txt, char ***result);
 
 #endif

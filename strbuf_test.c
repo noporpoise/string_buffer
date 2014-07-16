@@ -73,10 +73,10 @@ size_t total_tests_passed = 0, total_tests_failed = 0;
 
 /* Test MACROs specifically for strbuf */
 
-#define ASSERT_VALID(x) do {                 \
-    ASSERT((x)->len == strlen((x)->buff));   \
-    ASSERT((x)->len < (x)->capacity);        \
-    ASSERT((x)->buff[(x)->len] == '\0');     \
+#define ASSERT_VALID(x) do {              \
+    ASSERT((x)->end == strlen((x)->b));   \
+    ASSERT((x)->end < (x)->size);         \
+    ASSERT((x)->b[(x)->end] == '\0');     \
   } while(0)
 
 /**********************/
@@ -149,7 +149,7 @@ void test_buffers()
 
   // Test buffer_init, buffer_append_str, buffer_append_char etc
 
-  buffer_t *buf = buffer_new(4);
+  CharBuffer *buf = buffer_new(4);
 
   ASSERT(buf->begin == 1);
   ASSERT(buf->end == 1);
@@ -186,27 +186,6 @@ void test_buffers()
   buffer_free(buf);
 
   SUITE_END();
-}
-
-typedef struct {
-  char *text;
-  size_t len, size;
-} String;
-
-String* string_new(size_t len)
-{
-  String *st = malloc(sizeof(String));
-  st->text = malloc(sizeof(char)*(len+1));
-  st->size = len+1;
-  st->len = 0;
-  st->text[0] = 0;
-  return st;
-}
-
-void string_free(String *st)
-{
-  free(st->text);
-  free(st);
 }
 
 // Compare buffered vs unbuffered + gzfile vs FILE
@@ -249,16 +228,16 @@ void test_buffered_reading()
   gzfile1 = gzopen(tmp_gzfile1, "r");
   gzfile2 = gzopen(tmp_gzfile2, "r");
 
-  buffer_t *fbuf = buffer_new(12);
-  buffer_t *gzbuf = buffer_new(12);
+  CharBuffer *fbuf = buffer_new(12);
+  CharBuffer *gzbuf = buffer_new(12);
 
   ASSERT(fbuf != NULL);
   ASSERT(gzbuf != NULL);
 
-  String *st1 = string_new(10);
-  String *st2 = string_new(10);
-  String *st3 = string_new(10);
-  String *st4 = string_new(10);
+  StrBuf *st1 = strbuf_new(10);
+  StrBuf *st2 = strbuf_new(10);
+  StrBuf *st3 = strbuf_new(10);
+  StrBuf *st4 = strbuf_new(10);
 
   // getc
   int c1 = fgetc(file1);
@@ -289,38 +268,38 @@ void test_buffered_reading()
   ASSERT(c4 == 'h');
 
   // readline
-  ASSERT(freadline(file1, &(st1->text), &(st1->len), &(st1->size)) > 0);
-  ASSERT(freadline_buf(file2, fbuf, &(st2->text), &(st2->len), &(st2->size)) > 0);
-  ASSERT(gzreadline(gzfile1, &(st3->text), &(st3->len), &(st3->size)) > 0);
-  ASSERT(gzreadline_buf(gzfile2, gzbuf, &(st4->text), &(st4->len), &(st4->size)) > 0);
+  ASSERT(freadline(file1, &(st1->b), &(st1->end), &(st1->size)) > 0);
+  ASSERT(freadline_buf(file2, fbuf, &(st2->b), &(st2->end), &(st2->size)) > 0);
+  ASSERT(gzreadline(gzfile1, &(st3->b), &(st3->end), &(st3->size)) > 0);
+  ASSERT(gzreadline_buf(gzfile2, gzbuf, &(st4->b), &(st4->end), &(st4->size)) > 0);
 
-  ASSERT(strcmp(st1->text, "i\n") == 0);
-  ASSERT(strcmp(st2->text, "i\n") == 0);
-  ASSERT(strcmp(st3->text, "i\n") == 0);
-  ASSERT(strcmp(st4->text, "i\n") == 0);
-  ASSERT(st1->len == 2);
-  ASSERT(st2->len == 2);
-  ASSERT(st3->len == 2);
-  ASSERT(st4->len == 2);
+  ASSERT(strcmp(st1->b, "i\n") == 0);
+  ASSERT(strcmp(st2->b, "i\n") == 0);
+  ASSERT(strcmp(st3->b, "i\n") == 0);
+  ASSERT(strcmp(st4->b, "i\n") == 0);
+  ASSERT(st1->end == 2);
+  ASSERT(st2->end == 2);
+  ASSERT(st3->end == 2);
+  ASSERT(st4->end == 2);
 
   const char *lines[] = {"This is\n","Our file\r\n"};
 
-  st1->len = st2->len = st3->len = st4->len = 0;
+  st1->end = st2->end = st3->end = st4->end = 0;
 
   // readline
-  freadline(file1, &st1->text, &st1->len, &st1->size);
-  freadline_buf(file2, fbuf, &st2->text, &st2->len, &st2->size);
-  gzreadline(gzfile1, &st3->text, &st3->len, &st3->size);
-  gzreadline_buf(gzfile2, gzbuf, &st4->text, &st4->len, &st4->size);
+  freadline(file1, &st1->b, &st1->end, &st1->size);
+  freadline_buf(file2, fbuf, &st2->b, &st2->end, &st2->size);
+  gzreadline(gzfile1, &st3->b, &st3->end, &st3->size);
+  gzreadline_buf(gzfile2, gzbuf, &st4->b, &st4->end, &st4->size);
 
-  ASSERT(strcmp(st1->text, lines[0]) == 0);
-  ASSERT(strcmp(st2->text, lines[0]) == 0);
-  ASSERT(strcmp(st3->text, lines[0]) == 0);
-  ASSERT(strcmp(st4->text, lines[0]) == 0);
-  ASSERT(st1->len == strlen(lines[0]));
-  ASSERT(st2->len == strlen(lines[0]));
-  ASSERT(st3->len == strlen(lines[0]));
-  ASSERT(st4->len == strlen(lines[0]));
+  ASSERT(strcmp(st1->b, lines[0]) == 0);
+  ASSERT(strcmp(st2->b, lines[0]) == 0);
+  ASSERT(strcmp(st3->b, lines[0]) == 0);
+  ASSERT(strcmp(st4->b, lines[0]) == 0);
+  ASSERT(st1->end == strlen(lines[0]));
+  ASSERT(st2->end == strlen(lines[0]));
+  ASSERT(st3->end == strlen(lines[0]));
+  ASSERT(st4->end == strlen(lines[0]));
 
   // skipline
   fskipline(file1);
@@ -329,52 +308,52 @@ void test_buffered_reading()
   gzskipline_buf(gzfile2, gzbuf);
 
   // gets
-  ASSERT(fgets2(file1, st1->text, 10) != NULL);
-  ASSERT(fgets_buf(file2, fbuf, st2->text, 10) != NULL);
-  ASSERT(gzgets2(gzfile1, st3->text, 10) != NULL);
-  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->text, 10) != NULL);
+  ASSERT(fgets2(file1, st1->b, 10) != NULL);
+  ASSERT(fgets_buf(file2, fbuf, st2->b, 10) != NULL);
+  ASSERT(gzgets2(gzfile1, st3->b, 10) != NULL);
+  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->b, 10) != NULL);
 
   const char expected[] = "aaaaaaaaa";
-  ASSERT(strcmp(st1->text, expected) == 0);
-  ASSERT(strcmp(st2->text, expected) == 0);
-  ASSERT(strcmp(st3->text, expected) == 0);
-  ASSERT(strcmp(st4->text, expected) == 0);
+  ASSERT(strcmp(st1->b, expected) == 0);
+  ASSERT(strcmp(st2->b, expected) == 0);
+  ASSERT(strcmp(st3->b, expected) == 0);
+  ASSERT(strcmp(st4->b, expected) == 0);
 
-  st1->len = strlen(st1->text);
-  st2->len = strlen(st1->text);
-  st3->len = strlen(st1->text);
-  st4->len = strlen(st1->text);
+  st1->end = strlen(st1->b);
+  st2->end = strlen(st1->b);
+  st3->end = strlen(st1->b);
+  st4->end = strlen(st1->b);
 
   // readline
-  freadline(file1, &st1->text, &st1->len, &st1->size);
-  freadline_buf(file2, fbuf, &st2->text, &st2->len, &st2->size);
-  gzreadline(gzfile1, &st3->text, &st3->len, &st3->size);
-  gzreadline_buf(gzfile2, gzbuf, &st4->text, &st4->len, &st4->size);
+  freadline(file1, &st1->b, &st1->end, &st1->size);
+  freadline_buf(file2, fbuf, &st2->b, &st2->end, &st2->size);
+  gzreadline(gzfile1, &st3->b, &st3->end, &st3->size);
+  gzreadline_buf(gzfile2, gzbuf, &st4->b, &st4->end, &st4->size);
 
   for(i = 0; i < 1000; i++)
   {
-    ASSERT(st1->text[i] == 'a');
-    ASSERT(st2->text[i] == 'a');
-    ASSERT(st3->text[i] == 'a');
-    ASSERT(st4->text[i] == 'a');
+    ASSERT(st1->b[i] == 'a');
+    ASSERT(st2->b[i] == 'a');
+    ASSERT(st3->b[i] == 'a');
+    ASSERT(st4->b[i] == 'a');
   }
-  ASSERT(st1->text[i] == '\n');
-  ASSERT(st2->text[i] == '\n');
-  ASSERT(st3->text[i] == '\n');
-  ASSERT(st4->text[i] == '\n');
+  ASSERT(st1->b[i] == '\n');
+  ASSERT(st2->b[i] == '\n');
+  ASSERT(st3->b[i] == '\n');
+  ASSERT(st4->b[i] == '\n');
 
-  st1->len = st2->len = st3->len = st4->len = 0;
+  st1->end = st2->end = st3->end = st4->end = 0;
 
   // gets
-  ASSERT(fgets2(file1, st1->text, (unsigned int)st1->size) != NULL);
-  ASSERT(fgets_buf(file2, fbuf, st2->text, (unsigned int)st2->size) != NULL);
-  ASSERT(gzgets2(gzfile1, st3->text, (unsigned int)st3->size) != NULL);
-  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->text, (unsigned int)st4->size) != NULL);
+  ASSERT(fgets2(file1, st1->b, (unsigned int)st1->size) != NULL);
+  ASSERT(fgets_buf(file2, fbuf, st2->b, (unsigned int)st2->size) != NULL);
+  ASSERT(gzgets2(gzfile1, st3->b, (unsigned int)st3->size) != NULL);
+  ASSERT(gzgets_buf(gzfile2, gzbuf, st4->b, (unsigned int)st4->size) != NULL);
 
-  ASSERT(strcmp(st1->text, "That's all folks!") == 0);
-  ASSERT(strcmp(st2->text, "That's all folks!") == 0);
-  ASSERT(strcmp(st3->text, "That's all folks!") == 0);
-  ASSERT(strcmp(st4->text, "That's all folks!") == 0);
+  ASSERT(strcmp(st1->b, "That's all folks!") == 0);
+  ASSERT(strcmp(st2->b, "That's all folks!") == 0);
+  ASSERT(strcmp(st3->b, "That's all folks!") == 0);
+  ASSERT(strcmp(st4->b, "That's all folks!") == 0);
 
   // Check file/buffers empty
   ASSERT(fgetc(file1) == -1);
@@ -395,26 +374,26 @@ void test_buffered_reading()
   gzfile2 = gzopen(tmp_gzfile2, "r");
 
   // Reset strings
-  st1->len = st2->len = st3->len = st4->len = 0;
+  st1->end = st2->end = st3->end = st4->end = 0;
 
   // Rest buffers
   fbuf->begin = fbuf->end = gzbuf->begin = gzbuf->end = 0;
 
   // Read lines from file1 and compare to fread results on other files
-  while(freadline(file1, &st1->text, &st1->len, &st1->size) > 0)
+  while(freadline(file1, &st1->b, &st1->end, &st1->size) > 0)
   {
-    ASSERT(fread_buf(file2, st2->text, st1->len, fbuf) == (int)st1->len);
-    ASSERT(gzread(gzfile1, st3->text, (unsigned int)st1->len) == (int)st1->len);
-    ASSERT(gzread_buf(gzfile2, st4->text, st1->len, gzbuf) == (int)st1->len);
+    ASSERT(fread_buf(file2, st2->b, st1->end, fbuf) == (int)st1->end);
+    ASSERT(gzread(gzfile1, st3->b, (unsigned int)st1->end) == (int)st1->end);
+    ASSERT(gzread_buf(gzfile2, st4->b, st1->end, gzbuf) == (int)st1->end);
 
     // Null terminate since fread doesn't do that
-    st2->text[st1->len] = st3->text[st1->len] = st4->text[st1->len] = '\0';
+    st2->b[st1->end] = st3->b[st1->end] = st4->b[st1->end] = '\0';
 
-    ASSERT(strcmp(st1->text,st2->text) == 0);
-    ASSERT(strcmp(st1->text,st3->text) == 0);
-    ASSERT(strcmp(st1->text,st4->text) == 0);
+    ASSERT(strcmp(st1->b,st2->b) == 0);
+    ASSERT(strcmp(st1->b,st3->b) == 0);
+    ASSERT(strcmp(st1->b,st4->b) == 0);
 
-    st1->len = 0;
+    st1->end = 0;
   }
 
   // close files
@@ -424,10 +403,10 @@ void test_buffered_reading()
   gzclose(gzfile2);
 
   // free
-  string_free(st1);
-  string_free(st2);
-  string_free(st3);
-  string_free(st4);
+  strbuf_free(st1);
+  strbuf_free(st2);
+  strbuf_free(st3);
+  strbuf_free(st4);
   buffer_free(gzbuf);
   buffer_free(fbuf);
 
@@ -444,9 +423,9 @@ void _test_clone(const char *str)
   StrBuf *a = strbuf_create(str);
   StrBuf *b = strbuf_clone(a);
 
-  ASSERT(strcmp(a->buff,b->buff) == 0);
-  ASSERT(a->capacity == b->capacity);
-  ASSERT(a->len == b->len);
+  ASSERT(strcmp(a->b,b->b) == 0);
+  ASSERT(a->size == b->size);
+  ASSERT(a->end == b->end);
   ASSERT_VALID(a);
   ASSERT_VALID(b);
 
@@ -476,12 +455,12 @@ void test_clone()
 void _test_reset(const char *str)
 {
   StrBuf *a = strbuf_create(str);
-  size_t capacity = a->capacity;
+  size_t capacity = a->size;
   strbuf_reset(a);
 
-  ASSERT(a->buff[0] == '\0');
-  ASSERT(a->len == 0);
-  ASSERT(a->capacity == capacity);
+  ASSERT(a->b[0] == '\0');
+  ASSERT(a->end == 0);
+  ASSERT(a->size == capacity);
 
   strbuf_free(a);
 }
@@ -504,13 +483,13 @@ void test_reset()
 void _test_resize(const char *str, size_t new_len)
 {
   StrBuf *sbuf = strbuf_create(str);
-  ASSERT(strcmp(str, sbuf->buff) == 0);
+  ASSERT(strcmp(str, sbuf->b) == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_resize(sbuf, new_len);
   ASSERT_VALID(sbuf);
-  ASSERT(sbuf->len == MIN(new_len, strlen(str)));
-  ASSERT(strncmp(str, sbuf->buff, MIN(new_len, strlen(str))) == 0);
+  ASSERT(sbuf->end == MIN(new_len, strlen(str)));
+  ASSERT(strncmp(str, sbuf->b, MIN(new_len, strlen(str))) == 0);
 
   strbuf_free(sbuf);
 }
@@ -539,22 +518,22 @@ void test_get_set_char()
 
   StrBuf *sbuf = strbuf_create("abcd");
 
-  strbuf_set_char(sbuf, 0, 'z');
-  strbuf_set_char(sbuf, 1, 'y');
-  ASSERT(strcmp(sbuf->buff, "zycd") == 0);
-  strbuf_set_char(sbuf, 2, 'x');
-  strbuf_set_char(sbuf, 3, 'w');
-  ASSERT(strcmp(sbuf->buff, "zyxw") == 0);
-  strbuf_set_char(sbuf, 4, 'v');
-  strbuf_set_char(sbuf, 5, 'u');
-  ASSERT(strcmp(sbuf->buff, "zyxwvu") == 0);
+  strbuf_char(sbuf, 0) = 'z';
+  strbuf_char(sbuf, 1) = 'y';
+  ASSERT(strcmp(sbuf->b, "zycd") == 0);
+  strbuf_char(sbuf, 2) = 'x';
+  strbuf_char(sbuf, 3) = 'w';
+  ASSERT(strcmp(sbuf->b, "zyxw") == 0);
+  strbuf_append_char(sbuf, 'v');
+  strbuf_append_char(sbuf, 'u');
+  ASSERT(strcmp(sbuf->b, "zyxwvu") == 0);
 
-  ASSERT(strbuf_get_char(sbuf, 0) == 'z');
-  ASSERT(strbuf_get_char(sbuf, 1) == 'y');
-  ASSERT(strbuf_get_char(sbuf, 2) == 'x');
-  ASSERT(strbuf_get_char(sbuf, 3) == 'w');
-  ASSERT(strbuf_get_char(sbuf, 4) == 'v');
-  ASSERT(strbuf_get_char(sbuf, 5) == 'u');
+  ASSERT(strbuf_char(sbuf, 0) == 'z');
+  ASSERT(strbuf_char(sbuf, 1) == 'y');
+  ASSERT(strbuf_char(sbuf, 2) == 'x');
+  ASSERT(strbuf_char(sbuf, 3) == 'w');
+  ASSERT(strbuf_char(sbuf, 4) == 'v');
+  ASSERT(strbuf_char(sbuf, 5) == 'u');
 
   strbuf_free(sbuf);
 
@@ -565,7 +544,7 @@ void test_get_set_char()
 void _test_set(StrBuf *sbuf, const char *str)
 {
   strbuf_set(sbuf, str);
-  ASSERT(strcmp(sbuf->buff, str) == 0);
+  ASSERT(strcmp(sbuf->b, str) == 0);
   ASSERT_VALID(sbuf);
 }
 void test_set()
@@ -588,8 +567,8 @@ void test_set()
 void _test_as_str(StrBuf *sbuf, const char *str)
 {
   strbuf_set(sbuf, str);
-  char *tmp = strbuf_as_str(sbuf);
-  ASSERT(strcmp(str, sbuf->buff) == 0);
+  char *tmp = strbuf_dup_str(sbuf);
+  ASSERT(strcmp(str, sbuf->b) == 0);
   ASSERT(strcmp(tmp, str) == 0);
   ASSERT_VALID(sbuf);
   free(tmp);
@@ -597,7 +576,7 @@ void _test_as_str(StrBuf *sbuf, const char *str)
 void test_as_str()
 {
   SUITE_START("as_str");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
 
   _test_as_str(sbuf, "");
   _test_as_str(sbuf, "a");
@@ -613,8 +592,8 @@ void test_as_str()
 void _test_append(StrBuf* sbuf, char c, const char *str, const char *str2,
                   size_t n, const StrBuf *append)
 {
-  size_t len = sbuf->len;
-  size_t extend = append->len;
+  size_t len = sbuf->end;
+  size_t extend = append->end;
   size_t end = len + extend;
 
   strbuf_append_buff(sbuf, append);
@@ -624,18 +603,18 @@ void _test_append(StrBuf* sbuf, char c, const char *str, const char *str2,
 
   size_t str1len = strlen(str);
 
-  ASSERT(strncmp(sbuf->buff+len, append->buff, extend) == 0);
-  ASSERT(sbuf->buff[end] == c);
-  ASSERT(strncmp(sbuf->buff+end+1, str, str1len) == 0);
-  ASSERT(strncmp(sbuf->buff+end+1+str1len, str2, n) == 0);
+  ASSERT(strncmp(sbuf->b+len, append->b, extend) == 0);
+  ASSERT(sbuf->b[end] == c);
+  ASSERT(strncmp(sbuf->b+end+1, str, str1len) == 0);
+  ASSERT(strncmp(sbuf->b+end+1+str1len, str2, n) == 0);
 
-  ASSERT(sbuf->len == len + 1 + str1len + n + extend);
+  ASSERT(sbuf->end == len + 1 + str1len + n + extend);
   ASSERT_VALID(sbuf);
 }
 void test_append()
 {
   SUITE_START("append_char / append_buff / append_str / append_strn");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
 
   _test_append(sbuf, 'a', "", "", 0, sbuf);
   _test_append(sbuf, 'b', "a", "xxy", 1, sbuf);
@@ -644,7 +623,7 @@ void test_append()
   _test_append(sbuf, 'd', "abcdefghijklmno", "abcdefghijklmno", 15, sbuf);
   _test_append(sbuf, 'd', "", "", 0, sbuf);
 
-  StrBuf *empty = strbuf_new();
+  StrBuf *empty = strbuf_new(10);
   _test_append(sbuf, 'd', "", "", 0, empty);
   _test_append(empty, 'd', "", "", 0, sbuf);
 
@@ -662,11 +641,11 @@ void _test_chomp(const char *str)
 
   StrBuf *sbuf = strbuf_create(str);
   ASSERT_VALID(sbuf);
-  size_t buf_len = sbuf->len;
+  size_t buf_len = sbuf->end;
 
   strbuf_chomp(sbuf);
   ASSERT_VALID(sbuf);
-  size_t buf_trim = sbuf->len;
+  size_t buf_trim = sbuf->end;
 
   ASSERT(buf_len == len);
   ASSERT(buf_trim == trim);
@@ -694,11 +673,11 @@ void _test_reverse(const char *str)
   size_t len = strlen(str);
   StrBuf *sbuf = strbuf_create(str);
   strbuf_reverse(sbuf);
-  ASSERT(sbuf->len == len);
+  ASSERT(sbuf->end == len);
   ASSERT_VALID(sbuf);
 
   size_t i;
-  for(i = 0; i < len; i++) ASSERT(str[i] == sbuf->buff[len-i-1]);
+  for(i = 0; i < len; i++) ASSERT(str[i] == sbuf->b[len-i-1]);
 
   strbuf_free(sbuf);
 }
@@ -719,11 +698,11 @@ void test_reverse()
 void _test_substr(const char *str, size_t start, size_t len)
 {
   StrBuf *sbuf = strbuf_create(str);
-  ASSERT(strcmp(sbuf->buff, str) == 0);
+  ASSERT(strcmp(sbuf->b, str) == 0);
   ASSERT_VALID(sbuf);
 
   char *tmp = strbuf_substr(sbuf, start, len);
-  ASSERT(strncmp(tmp, sbuf->buff+start, len) == 0);
+  ASSERT(strncmp(tmp, sbuf->b+start, len) == 0);
   ASSERT(len == strlen(tmp));
 
   free(tmp);
@@ -755,17 +734,17 @@ void _test_change_case(const char *str)
 
   strbuf_to_uppercase(sbuf);
   ASSERT_VALID(sbuf);
-  char *upper = strbuf_as_str(sbuf);
+  char *upper = strbuf_dup_str(sbuf);
 
   strbuf_to_lowercase(sbuf);
   ASSERT_VALID(sbuf);
-  char *lower = strbuf_as_str(sbuf);
+  char *lower = strbuf_dup_str(sbuf);
 
   // Length checks
   size_t len = strlen(str);
   ASSERT(strlen(upper) == len);
   ASSERT(strlen(lower) == len);
-  ASSERT(sbuf->len == len);
+  ASSERT(sbuf->end == len);
 
   size_t i;
   for(i = 0; i < len; i++) {
@@ -793,20 +772,20 @@ void test_change_case()
 void _test_copy(StrBuf *sbuf, size_t pos, const char *from, size_t len)
 {
   char *frmcpy = strdup(from);
-  size_t orig_len = sbuf->len;
+  size_t orig_len = sbuf->end;
 
-  char *orig = strbuf_as_str(sbuf);
+  char *orig = strbuf_dup_str(sbuf);
   ASSERT_VALID(sbuf);
-  ASSERT(strcmp(sbuf->buff, orig) == 0);
+  ASSERT(strcmp(sbuf->b, orig) == 0);
 
   strbuf_copy(sbuf, pos, from, len);
 
-  ASSERT(sbuf->len == MAX(orig_len, pos+len));
+  ASSERT(sbuf->end == MAX(orig_len, pos+len));
   ASSERT_VALID(sbuf);
 
-  ASSERT(strncmp(sbuf->buff, orig, pos) == 0);
-  ASSERT(strncmp(sbuf->buff+pos, frmcpy, len) == 0);
-  ASSERT(strncmp(sbuf->buff+pos+len, orig+pos+len, sbuf->len-pos-len) == 0);
+  ASSERT(strncmp(sbuf->b, orig, pos) == 0);
+  ASSERT(strncmp(sbuf->b+pos, frmcpy, len) == 0);
+  ASSERT(strncmp(sbuf->b+pos+len, orig+pos+len, sbuf->end-pos-len) == 0);
 
   free(frmcpy);
   free(orig);
@@ -838,14 +817,14 @@ void test_copy()
   _test_copy(sbuf, 8, "", 0);
 
   strbuf_set(sbuf, "asdfasdfasdf");
-  _test_copy(sbuf, 8, sbuf->buff, sbuf->len);
+  _test_copy(sbuf, 8, sbuf->b, sbuf->end);
 
   for(i = 0; i <= 4; i++)
   {
     for(j = 0; j <= 4; j++)
     {
       strbuf_set(sbuf, "asdf");
-      _test_copy(sbuf, i, sbuf->buff, j);
+      _test_copy(sbuf, i, sbuf->b, j);
     }
   }
 
@@ -856,21 +835,21 @@ void test_copy()
 void _test_insert(StrBuf *sbuf, size_t pos, size_t len, const char *from)
 {
   char *frmcpy = (from == NULL ? calloc(1,1) : strdup(from));
-  size_t orig_len = sbuf->len;
+  size_t orig_len = sbuf->end;
 
-  char *orig = strbuf_as_str(sbuf);
+  char *orig = strbuf_dup_str(sbuf);
   ASSERT_VALID(sbuf);
-  ASSERT(strcmp(sbuf->buff, orig) == 0);
+  ASSERT(strcmp(sbuf->b, orig) == 0);
 
   strbuf_insert(sbuf, pos, from, len);
   ASSERT_VALID(sbuf);
 
-  ASSERT(sbuf->len == orig_len + len);
-  ASSERT(sbuf->len < sbuf->capacity);
+  ASSERT(sbuf->end == orig_len + len);
+  ASSERT(sbuf->end < sbuf->size);
 
-  ASSERT(strncmp(sbuf->buff, orig, pos) == 0);
-  ASSERT(strncmp(sbuf->buff+pos, frmcpy, len) == 0);
-  ASSERT(strncmp(sbuf->buff+pos+len, orig+pos, orig_len-pos) == 0);
+  ASSERT(strncmp(sbuf->b, orig, pos) == 0);
+  ASSERT(strncmp(sbuf->b+pos, frmcpy, len) == 0);
+  ASSERT(strncmp(sbuf->b+pos+len, orig+pos, orig_len-pos) == 0);
 
   free(frmcpy);
   free(orig);
@@ -903,20 +882,20 @@ void test_insert()
   _test_insert(sbuf, 8, 0, "");
 
   strbuf_set(sbuf, "asdfasdfasdf");
-  _test_insert(sbuf, 8, sbuf->len, sbuf->buff);
+  _test_insert(sbuf, 8, sbuf->end, sbuf->b);
 
   for(i = 0; i <= 4; i++)
   {
     for(j = 0; j <= 4; j++)
     {
       strbuf_set(sbuf, "asdf");
-      _test_insert(sbuf, i, j, sbuf->buff);
+      _test_insert(sbuf, i, j, sbuf->b);
     }
   }
 
   strbuf_set(sbuf, "abcdefghij");
-  strbuf_insert(sbuf, 3, sbuf->buff+1, 5);
-  ASSERT(strcmp(sbuf->buff, "abcbcdefdefghij") == 0);
+  strbuf_insert(sbuf, 3, sbuf->b+1, 5);
+  ASSERT(strcmp(sbuf->b, "abcbcdefdefghij") == 0);
   ASSERT_VALID(sbuf);
 
   char *long_str = malloc(501);
@@ -925,8 +904,8 @@ void test_insert()
   const char *short_str = "GGTTCTTCTTGGCTTCTTCTTTTCATTGCC";
   strbuf_set(sbuf, long_str);
   strbuf_insert(sbuf, 0, short_str, strlen(short_str));
-  ASSERT(strncmp(sbuf->buff, short_str, strlen(short_str)) == 0);
-  ASSERT(strcmp(sbuf->buff+strlen(short_str), long_str) == 0);
+  ASSERT(strncmp(sbuf->b, short_str, strlen(short_str)) == 0);
+  ASSERT(strcmp(sbuf->b+strlen(short_str), long_str) == 0);
   ASSERT_VALID(sbuf);
   free(long_str);
 
@@ -937,77 +916,77 @@ void test_insert()
 void test_overwrite()
 {
   SUITE_START("overwrite");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
 
   strbuf_set(sbuf, "aaabbccc");
 
   strbuf_overwrite(sbuf, 3, 2, "BBB", 3);
-  ASSERT(strcmp(sbuf->buff, "aaaBBBccc") == 0);
+  ASSERT(strcmp(sbuf->b, "aaaBBBccc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_overwrite(sbuf, 3, 3, "_x", 1);
-  ASSERT(strcmp(sbuf->buff, "aaa_ccc") == 0);
+  ASSERT(strcmp(sbuf->b, "aaa_ccc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_set(sbuf, "abcdefghijklmnopqrstuvwxyz");
   // replace de with abcdef
-  strbuf_overwrite(sbuf, 3, 2, sbuf->buff, 6);
-  ASSERT(strcmp(sbuf->buff, "abcabcdeffghijklmnopqrstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 3, 2, sbuf->b, 6);
+  ASSERT(strcmp(sbuf->b, "abcabcdeffghijklmnopqrstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace abcdef with de
-  strbuf_overwrite(sbuf, 3, 6, sbuf->buff+6, 2);
-  ASSERT(strcmp(sbuf->buff, "abcdefghijklmnopqrstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 3, 6, sbuf->b+6, 2);
+  ASSERT(strcmp(sbuf->b, "abcdefghijklmnopqrstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // do nothing
-  strbuf_overwrite(sbuf, 3, 0, sbuf->buff+6, 0);
-  ASSERT(strcmp(sbuf->buff, "abcdefghijklmnopqrstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 3, 0, sbuf->b+6, 0);
+  ASSERT(strcmp(sbuf->b, "abcdefghijklmnopqrstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // delete b
-  strbuf_overwrite(sbuf, 1, 1, sbuf->buff, 0);
-  ASSERT(strcmp(sbuf->buff, "acdefghijklmnopqrstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 1, 1, sbuf->b, 0);
+  ASSERT(strcmp(sbuf->b, "acdefghijklmnopqrstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // swap ghij with hi
-  strbuf_overwrite(sbuf, 5, 4, sbuf->buff+6, 2);
-  ASSERT(strcmp(sbuf->buff, "acdefhiklmnopqrstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 5, 4, sbuf->b+6, 2);
+  ASSERT(strcmp(sbuf->b, "acdefhiklmnopqrstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace o with z
-  strbuf_overwrite(sbuf, 11, 1, sbuf->buff+22, 1);
-  ASSERT(strcmp(sbuf->buff, "acdefhiklmnzpqrstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 11, 1, sbuf->b+22, 1);
+  ASSERT(strcmp(sbuf->b, "acdefhiklmnzpqrstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace pq with stuv
-  strbuf_overwrite(sbuf, 12, 2, sbuf->buff+15, 4);
-  ASSERT(strcmp(sbuf->buff, "acdefhiklmnzstuvrstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 12, 2, sbuf->b+15, 4);
+  ASSERT(strcmp(sbuf->b, "acdefhiklmnzstuvrstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace stuv with e
-  strbuf_overwrite(sbuf, 12, 4, sbuf->buff+3, 1);
-  ASSERT(strcmp(sbuf->buff, "acdefhiklmnzerstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 12, 4, sbuf->b+3, 1);
+  ASSERT(strcmp(sbuf->b, "acdefhiklmnzerstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace lmn with "A"
   strbuf_overwrite(sbuf, 8, 3, "AB", 1);
-  ASSERT(strcmp(sbuf->buff, "acdefhikAzerstuvwxyz") == 0);
+  ASSERT(strcmp(sbuf->b, "acdefhikAzerstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace A with "XYZ"
   strbuf_overwrite(sbuf, 8, 1, "XYZ", 3);
-  ASSERT(strcmp(sbuf->buff, "acdefhikXYZzerstuvwxyz") == 0);
+  ASSERT(strcmp(sbuf->b, "acdefhikXYZzerstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace XYZ with "Zz"
-  strbuf_overwrite(sbuf, 8, 3, sbuf->buff+10, 2);
-  ASSERT(strcmp(sbuf->buff, "acdefhikZzzerstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 8, 3, sbuf->b+10, 2);
+  ASSERT(strcmp(sbuf->b, "acdefhikZzzerstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   // replace zer with "zz"
-  strbuf_overwrite(sbuf, 10, 3, sbuf->buff+9, 2);
-  ASSERT(strcmp(sbuf->buff, "acdefhikZzzzstuvwxyz") == 0);
+  strbuf_overwrite(sbuf, 10, 3, sbuf->b+9, 2);
+  ASSERT(strcmp(sbuf->b, "acdefhikZzzzstuvwxyz") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_free(sbuf);
@@ -1017,32 +996,32 @@ void test_overwrite()
 void test_delete()
 {
   SUITE_START("delete");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
 
   strbuf_set(sbuf, "aaaBBccc");
 
   strbuf_delete(sbuf, 3, 2);
-  ASSERT(strcmp(sbuf->buff, "aaaccc") == 0);
+  ASSERT(strcmp(sbuf->b, "aaaccc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_delete(sbuf, 3, 0);
-  ASSERT(strcmp(sbuf->buff, "aaaccc") == 0);
+  ASSERT(strcmp(sbuf->b, "aaaccc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_delete(sbuf, 0, 0);
-  ASSERT(strcmp(sbuf->buff, "aaaccc") == 0);
+  ASSERT(strcmp(sbuf->b, "aaaccc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_delete(sbuf, 0, 1);
-  ASSERT(strcmp(sbuf->buff, "aaccc") == 0);
+  ASSERT(strcmp(sbuf->b, "aaccc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_delete(sbuf, 4, 1);
-  ASSERT(strcmp(sbuf->buff, "aacc") == 0);
+  ASSERT(strcmp(sbuf->b, "aacc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_delete(sbuf, 4, 0);
-  ASSERT(strcmp(sbuf->buff, "aacc") == 0);
+  ASSERT(strcmp(sbuf->b, "aacc") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_free(sbuf);
@@ -1052,17 +1031,17 @@ void test_delete()
 void test_sprintf()
 {
   SUITE_START("sprintf");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
 
   // although valid, GCC complains about formatted strings of length 0
   #ifdef __clang__
   strbuf_sprintf(sbuf, "");
-  ASSERT(strcmp(sbuf->buff, "") == 0);
+  ASSERT(strcmp(sbuf->b, "") == 0);
   ASSERT_VALID(sbuf);
   #endif
 
   strbuf_sprintf(sbuf, "hi. ");
-  ASSERT(strcmp(sbuf->buff, "hi. ") == 0);
+  ASSERT(strcmp(sbuf->b, "hi. ") == 0);
   ASSERT_VALID(sbuf);
 
   // Note: strbuf_sprintf appends -> so we still have 'hi. '
@@ -1074,17 +1053,17 @@ void test_sprintf()
                      "where it means 13 for some reason.  No other "
                      "profession is known to have its own dozen";
 
-  ASSERT(strcmp(sbuf->buff, ans) == 0);
+  ASSERT(strcmp(sbuf->b, ans) == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_reset(sbuf);
   strbuf_sprintf(sbuf, "woot %s %i %c", "what excitement", 12, '?');
-  ASSERT(strcmp(sbuf->buff, "woot what excitement 12 ?") == 0);
+  ASSERT(strcmp(sbuf->b, "woot what excitement 12 ?") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_reset(sbuf);
   strbuf_sprintf(sbuf, "bye");
-  ASSERT(strcmp(sbuf->buff, "bye") == 0);
+  ASSERT(strcmp(sbuf->b, "bye") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_free(sbuf);
@@ -1094,29 +1073,29 @@ void test_sprintf()
 void test_sprintf_at()
 {
   SUITE_START("sprintf_at");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
 
   // although valid, GCC complains about formatted strings of length 0
   #ifdef __clang__
   strbuf_sprintf_at(sbuf, 0, "");
-  ASSERT(strcmp(sbuf->buff, "") == 0);
+  ASSERT(strcmp(sbuf->b, "") == 0);
   ASSERT_VALID(sbuf);
   #endif
 
   strbuf_sprintf_at(sbuf, 0, "hi. ");
-  ASSERT(strcmp(sbuf->buff, "hi. ") == 0);
+  ASSERT(strcmp(sbuf->b, "hi. ") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_sprintf_at(sbuf, 2, " bye. ");
-  ASSERT(strcmp(sbuf->buff, "hi bye. ") == 0);
+  ASSERT(strcmp(sbuf->b, "hi bye. ") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_sprintf_at(sbuf, 0, "woot %s %i %c", "what excitement", 12, '?');
-  ASSERT(strcmp(sbuf->buff, "woot what excitement 12 ?") == 0);
+  ASSERT(strcmp(sbuf->b, "woot what excitement 12 ?") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_sprintf_at(sbuf, 5, "moo %i", 6);
-  ASSERT(strcmp(sbuf->buff, "woot moo 6") == 0);
+  ASSERT(strcmp(sbuf->b, "woot moo 6") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_free(sbuf);
@@ -1126,36 +1105,36 @@ void test_sprintf_at()
 void test_sprintf_noterm()
 {
   SUITE_START("sprintf_noterm");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
 
   // although valid, GCC complains about formatted strings of length 0
   #ifdef __clang__
   strbuf_sprintf_noterm(sbuf, 0, "");
-  ASSERT(strcmp(sbuf->buff, "") == 0);
+  ASSERT(strcmp(sbuf->b, "") == 0);
   ASSERT_VALID(sbuf);
   #endif
 
   strbuf_sprintf_noterm(sbuf, 0, "hi. ");
-  ASSERT(strcmp(sbuf->buff, "hi. ") == 0);
+  ASSERT(strcmp(sbuf->b, "hi. ") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_sprintf_noterm(sbuf, 2, " bye. ");
-  ASSERT(strcmp(sbuf->buff, "hi bye. ") == 0);
+  ASSERT(strcmp(sbuf->b, "hi bye. ") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_sprintf_noterm(sbuf, 0, "woot %s %i %c", "what excitement", 12, '?');
-  ASSERT(strcmp(sbuf->buff, "woot what excitement 12 ?") == 0);
+  ASSERT(strcmp(sbuf->b, "woot what excitement 12 ?") == 0);
   ASSERT_VALID(sbuf);
 
   strbuf_sprintf_noterm(sbuf, 5, "moo %i", 6);
-  ASSERT(strcmp(sbuf->buff, "woot moo 6excitement 12 ?") == 0);
+  ASSERT(strcmp(sbuf->b, "woot moo 6excitement 12 ?") == 0);
   ASSERT_VALID(sbuf);
 
   // although valid, GCC complains about formatted strings of length 0
   #ifdef __clang__
   StrBuf *sbuf2 = strbuf_clone(sbuf);
   strbuf_sprintf_noterm(sbuf, 5, "");
-  ASSERT(strcmp(sbuf->buff, sbuf2->buff) == 0);
+  ASSERT(strcmp(sbuf->b, sbuf2->b) == 0);
   ASSERT_VALID(sbuf2);
   strbuf_free(sbuf2);
   #endif
@@ -1177,31 +1156,31 @@ void test_sprintf_noterm()
     __close(out); \
     type_t file = __open(path, "r"); \
     if(file == NULL) die("Couldn't open: %s", path); \
-    StrBuf *line = strbuf_new(); \
+    StrBuf *line = strbuf_new(10); \
     __readline(line, file); \
-    ASSERT(strcmp(line->buff, "hi\n") == 0); \
-    ASSERT(line->len == strlen(line->buff)); \
-    ASSERT(line->len < line->capacity); \
+    ASSERT(strcmp(line->b, "hi\n") == 0); \
+    ASSERT(line->end == strlen(line->b)); \
+    ASSERT(line->end < line->size); \
     strbuf_chomp(line); \
-    ASSERT(strcmp(line->buff, "hi") == 0); \
-    ASSERT(line->len == strlen(line->buff)); \
-    ASSERT(line->len < line->capacity); \
+    ASSERT(strcmp(line->b, "hi") == 0); \
+    ASSERT(line->end == strlen(line->b)); \
+    ASSERT(line->end < line->size); \
     __skipline(file); \
     strbuf_reset(line); \
     __readline(line, file); \
-    ASSERT(strcmp(line->buff, "our file\n") == 0); \
-    ASSERT(line->len == strlen(line->buff)); \
-    ASSERT(line->len < line->capacity); \
+    ASSERT(strcmp(line->b, "our file\n") == 0); \
+    ASSERT(line->end == strlen(line->b)); \
+    ASSERT(line->end < line->size); \
     strbuf_chomp(line); \
-    ASSERT(strcmp(line->buff, "our file") == 0); \
-    ASSERT(line->len == strlen(line->buff)); \
-    ASSERT(line->len < line->capacity); \
+    ASSERT(strcmp(line->b, "our file") == 0); \
+    ASSERT(line->end == strlen(line->b)); \
+    ASSERT(line->end < line->size); \
     strbuf_reset(line); \
     __readline(line, file); \
-    ASSERT(line->len == 1000); \
-    ASSERT(line->len < line->capacity); \
-    for(i = 0; i < 1000; i++) { ASSERT(line->buff[i] == 'a'); } \
-    ASSERT(line->buff[1000] == '\0'); \
+    ASSERT(line->end == 1000); \
+    ASSERT(line->end < line->size); \
+    for(i = 0; i < 1000; i++) { ASSERT(line->b[i] == 'a'); } \
+    ASSERT(line->b[1000] == '\0'); \
     strbuf_free(line); \
     __close(file); \
   }
@@ -1237,44 +1216,44 @@ void test_read_nonempty()
   fh = fopen(tmp_file1, "r");
   if(fh == NULL) die("Cannot read tmp output file: %s", tmp_file1);
 
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
   ASSERT(strbuf_readline_nonempty(sbuf, fh));
   strbuf_chomp(sbuf);
-  ASSERT(strcmp(sbuf->buff,"hi")==0);
+  ASSERT(strcmp(sbuf->b,"hi")==0);
 
   strbuf_reset(sbuf);
   ASSERT(strbuf_readline_nonempty(sbuf, fh));
   strbuf_chomp(sbuf);
-  ASSERT(strcmp(sbuf->buff,"bye")==0);
+  ASSERT(strcmp(sbuf->b,"bye")==0);
 
   strbuf_reset(sbuf);
   ASSERT(strbuf_readline(sbuf, fh));
   strbuf_chomp(sbuf);
-  ASSERT(strcmp(sbuf->buff,"x")==0);
+  ASSERT(strcmp(sbuf->b,"x")==0);
 
   strbuf_reset(sbuf);
   ASSERT(strbuf_readline_nonempty(sbuf, fh));
   strbuf_chomp(sbuf);
-  ASSERT(strcmp(sbuf->buff,"y")==0);
+  ASSERT(strcmp(sbuf->b,"y")==0);
   ASSERT_VALID(sbuf);
 
   strbuf_reset(sbuf);
   ASSERT(strbuf_readline(sbuf, fh));
   strbuf_chomp(sbuf);
-  ASSERT(strcmp(sbuf->buff,"")==0);
+  ASSERT(strcmp(sbuf->b,"")==0);
 
   strbuf_reset(sbuf);
   ASSERT(strbuf_readline_nonempty(sbuf, fh));
   strbuf_chomp(sbuf);
-  ASSERT(strcmp(sbuf->buff,"z")==0);
+  ASSERT(strcmp(sbuf->b,"z")==0);
 
   strbuf_reset(sbuf);
   ASSERT(strbuf_readline_nonempty(sbuf, fh) == 0);
-  ASSERT(sbuf->len == 0);
+  ASSERT(sbuf->end == 0);
 
   strbuf_reset(sbuf);
   ASSERT(strbuf_readline(sbuf,fh) == 0);
-  ASSERT(sbuf->len == 0);
+  ASSERT(sbuf->end == 0);
 
   ASSERT_VALID(sbuf);
   strbuf_free(sbuf);
@@ -1289,19 +1268,19 @@ void _test_trim(const char *str, const char *ans)
 {
   StrBuf *sbuf = strbuf_create(str);
   strbuf_trim(sbuf);
-  ASSERT(strcmp(sbuf->buff, ans) == 0);
-  ASSERT(sbuf->len == strlen(sbuf->buff));
-  ASSERT(sbuf->len < sbuf->capacity);
+  ASSERT(strcmp(sbuf->b, ans) == 0);
+  ASSERT(sbuf->end == strlen(sbuf->b));
+  ASSERT(sbuf->end < sbuf->size);
   strbuf_free(sbuf);
 }
 void _test_trim2(const char *str, const char *alphabet, const char *ans,
-                     void (*trim)(StrBuf *sbuf, const char* list))
+                     void (*trim)(StrBuf *sbuf, const char *list))
 {
   StrBuf *sbuf = strbuf_create(str);
   trim(sbuf, alphabet);
-  ASSERT(strcmp(sbuf->buff, ans) == 0);
-  ASSERT(sbuf->len == strlen(sbuf->buff));
-  ASSERT(sbuf->len < sbuf->capacity);
+  ASSERT(strcmp(sbuf->b, ans) == 0);
+  ASSERT(sbuf->end == strlen(sbuf->b));
+  ASSERT(sbuf->end < sbuf->size);
   strbuf_free(sbuf);
 }
 void test_trim()
@@ -1474,14 +1453,14 @@ void test_split_str()
 void test_sscanf()
 {
   SUITE_START("using sscanf");
-  StrBuf *sbuf = strbuf_new();
+  StrBuf *sbuf = strbuf_new(10);
   const char *input = "I'm sorry Dave I can't do that";
   
   strbuf_ensure_capacity(sbuf, strlen(input));
-  sscanf(input, "I'm sorry %s I can't do that", sbuf->buff);
-  sbuf->len = strlen(sbuf->buff);
+  sscanf(input, "I'm sorry %s I can't do that", sbuf->b);
+  sbuf->end = strlen(sbuf->b);
 
-  ASSERT(strcmp(sbuf->buff, "Dave") == 0);
+  ASSERT(strcmp(sbuf->b, "Dave") == 0);
 
   strbuf_free(sbuf);
   SUITE_END();
@@ -1492,15 +1471,15 @@ void test_sscanf()
 void test_all_whitespace_old()
 {
   printf("Test string_is_all_whitespace:\n");
-  const char* str = "  \tasdf";
+  const char *str = "  \tasdf";
   printf("string_is_all_whitespace('%s'): %i\n", str, string_is_all_whitespace(str));
   str = "  \t ";
   printf("string_is_all_whitespace('%s'): %i\n", str, string_is_all_whitespace(str));
 }
 
-void _test_split_old(const char* split, const char* txt)
+void _test_split_old(const char *split, const char *txt)
 {
-  char** results;
+  char **results;
   
   printf("split '%s' by '%s': (", txt, split);
   

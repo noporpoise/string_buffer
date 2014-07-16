@@ -20,7 +20,6 @@
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
-#define MIN_SIZE 16
 
 #ifndef ROUNDUP2POW
   #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
@@ -35,35 +34,18 @@
 // Bounds check when inserting (pos <= len are valid)
 #define _bounds_check_insert(sbuf,pos) \
         _call_bounds_check_insert(sbuf,pos,__FILE__,__LINE__,__func__)
-#define _bounds_check_read(sbuf,pos) \
-        _call_bounds_check_read(sbuf,pos,__FILE__,__LINE__,__func__)
 #define _bounds_check_read_range(sbuf,start,len) \
         _call_bounds_check_read_range(sbuf,start,len,__FILE__,__LINE__,__func__)
 
 static inline
-void _call_bounds_check_insert(const StrBuf* sbuf, size_t pos,
-                               const char* file, int line, const char* func)
+void _call_bounds_check_insert(const StrBuf *sbuf, size_t pos,
+                               const char *file, int line, const char *func)
 {
-  if(pos > sbuf->len)
+  if(pos > sbuf->end)
   {
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
                     "[index: %zu, num_of_bits: %zu]\n",
-            file, line, func, pos, sbuf->len);
-    errno = EDOM;
-    exit_on_error();
-  }
-}
-
-// Bounds check when reading (pos < len are valid)
-static inline
-void _call_bounds_check_read(const StrBuf* sbuf, size_t pos,
-                             const char* file, int line, const char* func)
-{
-  if(pos >= sbuf->len)
-  {
-    fprintf(stderr, "%s:%i:%s() - out of bounds error "
-                    "[index: %zu, num_of_bits: %zu]\n",
-            file, line, func, pos, sbuf->len);
+            file, line, func, pos, sbuf->end);
     errno = EDOM;
     exit_on_error();
   }
@@ -72,14 +54,14 @@ void _call_bounds_check_read(const StrBuf* sbuf, size_t pos,
 // Bounds check when reading a range (start+len < strlen is valid)
 static inline
 void _call_bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
-                                   const char* file, int line, const char* func)
+                                   const char *file, int line, const char *func)
 {
-  if(start + len > sbuf->len)
+  if(start + len > sbuf->end)
   {
     fprintf(stderr, "%s:%i:%s() - out of bounds error "
                     "[start: %zu; length: %zu; strlen: %zu; buf:%.*s%s]\n",
-            file, line, func, start, len, sbuf->len,
-            (int)MIN(5, sbuf->len), sbuf->buff, sbuf->len > 5 ? "..." : "");
+            file, line, func, start, len, sbuf->end,
+            (int)MIN(5, sbuf->end), sbuf->b, sbuf->end > 5 ? "..." : "");
     errno = EDOM;
     exit_on_error();
   }
@@ -89,91 +71,40 @@ void _call_bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
 /*  Constructors/Destructors  */
 /******************************/
 
-StrBuf* strbuf_init(size_t capacity)
+StrBuf* strbuf_new(size_t size)
 {
-  StrBuf* sbuf = malloc(sizeof(StrBuf));
-  if(sbuf == NULL) return NULL;
-  if(strbuf_alloc(sbuf, capacity) == NULL) { free(sbuf); sbuf = NULL; }
+  StrBuf *sbuf = buffer_new(size+1);
+  if(!sbuf) return NULL;
+  sbuf->b[sbuf->begin = sbuf->end = 0] = 0;
   return sbuf;
 }
 
-StrBuf* strbuf_create(const char* str)
+StrBuf* strbuf_alloc(StrBuf *sbuf, size_t size)
+{
+  buffer_alloc(sbuf, size+1);
+  if(!sbuf->b) return NULL;
+  sbuf->b[sbuf->begin = sbuf->end = 0] = 0;
+  return sbuf;
+}
+
+StrBuf* strbuf_create(const char *str)
 {
   size_t str_len = strlen(str);
-  StrBuf* sbuf = strbuf_init(str_len);
-  if(sbuf == NULL) return sbuf;
-  strcpy(sbuf->buff, str);
-  sbuf->len = str_len;
+  StrBuf *sbuf = strbuf_new(str_len+1);
+  if(!sbuf) return NULL;
+  memcpy(sbuf->b, str, str_len);
+  sbuf->b[sbuf->end = str_len] = '\0';
   return sbuf;
 }
 
-StrBuf* strbuf_alloc(StrBuf *sbuf, size_t capacity)
-{
-  capacity = capacity < MIN_SIZE ? MIN_SIZE : ROUNDUP2POW(capacity+1);
-  sbuf->buff = malloc(capacity * sizeof(char));
-  sbuf->len = 0;
-  sbuf->capacity = capacity;
-  return sbuf->buff == NULL ? NULL : sbuf;
-}
-
-void strbuf_dealloc(StrBuf *sbuf)
-{
-  free(sbuf->buff);
-  memset(sbuf, 0, sizeof(StrBuf));
-}
-
-void strbuf_free(StrBuf* sbuf)
-{
-  free(sbuf->buff);
-  free(sbuf);
-}
-
-StrBuf* strbuf_clone(const StrBuf* sbuf)
+StrBuf* strbuf_clone(const StrBuf *sbuf)
 {
   // One byte for the string end / null char \0
-  StrBuf* sbuf_cpy = strbuf_init(sbuf->len);
-  if(sbuf_cpy == NULL) return NULL;
-  strcpy(sbuf_cpy->buff, sbuf->buff);
-  sbuf_cpy->buff[sbuf->len] = '\0';
-  sbuf_cpy->len = sbuf->len;
-  return sbuf_cpy;
-}
-
-// Get a copy of this StrBuf as a char array
-// Returns NULL if not enough memory
-char* strbuf_as_str(const StrBuf* sbuf)
-{
-  char* cpy = malloc((sbuf->len + 1) * sizeof(char));
-  if(cpy == NULL) return NULL;
-
-  memcpy(cpy, sbuf->buff, sbuf->len * sizeof(char));
-  cpy[sbuf->len] = '\0';
-
+  StrBuf *cpy = strbuf_new(sbuf->end+1);
+  if(!cpy) return NULL;
+  memcpy(cpy->b, sbuf->b, sbuf->end);
+  cpy->b[cpy->end = sbuf->end] = '\0';
   return cpy;
-}
-
-// Get / set characters
-
-char strbuf_get_char(const StrBuf *sbuf, size_t index)
-{
-  _bounds_check_read(sbuf, index);
-  return sbuf->buff[index];
-}
-
-void strbuf_set_char(StrBuf *sbuf, size_t index, char c)
-{
-  _bounds_check_insert(sbuf, index);
-
-  if(index == sbuf->len)
-  {
-    // Extend
-    strbuf_ensure_capacity(sbuf, sbuf->len + 1);
-    sbuf->buff[sbuf->len++] = c;
-    sbuf->buff[sbuf->len] = '\0';
-  }
-  else {
-    sbuf->buff[index] = c;
-  }
 }
 
 /******************************/
@@ -186,135 +117,70 @@ void strbuf_set_char(StrBuf *sbuf, size_t index, char c)
 char strbuf_resize(StrBuf *sbuf, size_t new_len)
 {
   size_t capacity = ROUNDUP2POW(new_len+1);
-  char *new_buff = realloc(sbuf->buff, capacity * sizeof(char));
+  char *new_buff = realloc(sbuf->b, capacity * sizeof(char));
   if(new_buff == NULL) return 0;
 
-  sbuf->buff = new_buff;
-  sbuf->capacity = capacity;
+  sbuf->b = new_buff;
+  sbuf->size = capacity;
 
-  if(sbuf->len > new_len)
+  if(sbuf->end > new_len)
   {
     // Buffer was shrunk - re-add null byte
-    sbuf->len = new_len;
-    sbuf->buff[sbuf->len] = '\0';
+    sbuf->end = new_len;
+    sbuf->b[sbuf->end] = '\0';
   }
 
   return 1;
 }
 
-// Ensure capacity for len characters plus '\0' character
-void strbuf_ensure_capacity(StrBuf *sbuf, size_t size)
-{
-  if(sbuf->capacity <= size+1 && !strbuf_resize(sbuf, size))
-  {
-    fprintf(stderr, "%s:%i:Error: strbuf_ensure_capacity couldn't resize "
-                    "buffer. [requested %zu bytes; capacity: %zu bytes]\n",
-            __FILE__, __LINE__, size, sbuf->capacity);
-    exit_on_error();
-  }
-}
-
 static inline
 void _ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **ptr)
 {
-  if(sbuf->capacity <= size+1)
+  if(sbuf->size <= size+1)
   {
-    size_t oldcap = sbuf->capacity;
-    char *oldbuf = sbuf->buff;
+    size_t oldcap = sbuf->size;
+    char *oldbuf = sbuf->b;
 
     if(!strbuf_resize(sbuf, size))
     {
       fprintf(stderr, "%s:%i:Error: _ensure_capacity_update_ptr couldn't resize "
                       "buffer. [requested %zu bytes; capacity: %zu bytes]\n",
-              __FILE__, __LINE__, size, sbuf->capacity);
+              __FILE__, __LINE__, size, sbuf->size);
       exit_on_error();
     }
 
     // ptr may have pointed to sbuf, which has now moved
     if(*ptr >= oldbuf && *ptr < oldbuf + oldcap) {
-      *ptr = sbuf->buff + (*ptr - oldbuf);
+      *ptr = sbuf->b + (*ptr - oldbuf);
     }
   }
-}
-
-void strbuf_shrink(StrBuf *sbuf, size_t new_len)
-{
-  if(new_len > sbuf->len) {
-    fprintf(stderr, "%s:%i:Error: strbuf_shrink arg longer than length "
-                    "[new_len: %zu; cur_len: %zu]\n",
-            __FILE__, __LINE__, new_len, sbuf->len);
-    exit_on_error();
-  }
-
-  sbuf->len = new_len;
-  sbuf->buff[sbuf->len] = '\0';
 }
 
 /********************/
 /* String functions */
 /********************/
 
-// Set string buffer to contain a given string
-// The string can be a string within the given string buffer
-void strbuf_set(StrBuf *sbuf, const char *str)
-{
-  size_t len = strlen(str);
-  _ensure_capacity_update_ptr(sbuf, len, &str);
-
-  // Use memmove to allow overlapping strings
-  memmove(sbuf->buff, str, len * sizeof(char));
-
-  sbuf->buff[len] = '\0';
-  sbuf->len = len;
-}
-
-// Set string buffer to match existing string buffer
-void strbuf_set_buff(StrBuf *dst, const StrBuf *src)
-{
-  strbuf_ensure_capacity(dst, src->len+1);
-  memcpy(dst->buff, src->buff, src->len);
-  dst->buff[dst->len = src->len] = '\0';
-}
-
-// src may point to this buffer
-void strbuf_append_strn(StrBuf* sbuf, const char* src, size_t len)
-{
-  // plus 1 for '\0'
-  _ensure_capacity_update_ptr(sbuf, sbuf->len + len, &src);
-  memcpy(sbuf->buff+sbuf->len, src, len * sizeof(char));
-  sbuf->len += len;
-  sbuf->buff[sbuf->len] = '\0';
-}
-
-void strbuf_append_char(StrBuf* sbuf, char c)
-{
-  // Adding one character
-  strbuf_ensure_capacity(sbuf, sbuf->len + 1);
-  sbuf->buff[sbuf->len++] = c;
-  sbuf->buff[sbuf->len] = '\0';
-}
-
 // Remove \r and \n characters from the end of this StrBuf
 // Returns the number of characters removed
 size_t strbuf_chomp(StrBuf *sbuf)
 {
-  size_t old_len = sbuf->len;
-  sbuf->len = string_chomp(sbuf->buff, sbuf->len);
-  return old_len - sbuf->len;
+  size_t old_len = sbuf->end;
+  sbuf->end = string_chomp(sbuf->b, sbuf->end);
+  return old_len - sbuf->end;
 }
 
 // Reverse a string
 void strbuf_reverse(StrBuf *sbuf)
 {
-  string_reverse_region(sbuf->buff, sbuf->len);
+  string_reverse_region(sbuf->b, sbuf->end);
 }
 
 char* strbuf_substr(const StrBuf *sbuf, size_t start, size_t len)
 {
   _bounds_check_read_range(sbuf, start, len);
 
-  char* new_string = malloc((len+1) * sizeof(char));
-  strncpy(new_string, sbuf->buff + start, len);
+  char *new_string = malloc((len+1) * sizeof(char));
+  strncpy(new_string, sbuf->b + start, len);
   new_string[len] = '\0';
 
   return new_string;
@@ -322,21 +188,19 @@ char* strbuf_substr(const StrBuf *sbuf, size_t start, size_t len)
 
 void strbuf_to_uppercase(StrBuf *sbuf)
 {
-  char* pos;
-  char* end = sbuf->buff + sbuf->len;
-  for(pos = sbuf->buff; pos < end; pos++) *pos = (char)toupper(*pos);
+  char *pos, *end = sbuf->b + sbuf->end;
+  for(pos = sbuf->b; pos < end; pos++) *pos = (char)toupper(*pos);
 }
 
 void strbuf_to_lowercase(StrBuf *sbuf)
 {
-  char* pos;
-  char* end = sbuf->buff + sbuf->len;
-  for(pos = sbuf->buff; pos < end; pos++) *pos = (char)tolower(*pos);
+  char *pos, *end = sbuf->b + sbuf->end;
+  for(pos = sbuf->b; pos < end; pos++) *pos = (char)tolower(*pos);
 }
 
 // Copy a string to this StrBuf, overwriting any existing characters
 // Note: dst_pos + len can be longer the the current dst StrBuf
-void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
+void strbuf_copy(StrBuf *dst, size_t dst_pos, const char *src, size_t len)
 {
   if(src == NULL || len == 0) return;
 
@@ -344,22 +208,22 @@ void strbuf_copy(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
 
   // Check if dst buffer can handle string
   // src may have pointed to dst, which has now moved
-  size_t newlen = MAX(dst_pos + len, dst->len);
+  size_t newlen = MAX(dst_pos + len, dst->end);
   _ensure_capacity_update_ptr(dst, newlen, &src);
 
   // memmove instead of strncpy, as it can handle overlapping regions
-  memmove(dst->buff+dst_pos, src, len * sizeof(char));
+  memmove(dst->b+dst_pos, src, len * sizeof(char));
 
-  if(dst_pos + len > dst->len)
+  if(dst_pos + len > dst->end)
   {
     // Extended string - add '\0' char
-    dst->len = dst_pos + len;
-    dst->buff[dst->len] = '\0';
+    dst->end = dst_pos + len;
+    dst->b[dst->end] = '\0';
   }
 }
 
 // Insert: copy to a StrBuf, shifting any existing characters along
-void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
+void strbuf_insert(StrBuf *dst, size_t dst_pos, const char *src, size_t len)
 {
   if(src == NULL || len == 0) return;
 
@@ -368,17 +232,17 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
   // Check if dst buffer has capacity for inserted string plus \0
   // src may have pointed to dst, which will be moved in realloc when
   // calling ensure capacity
-  _ensure_capacity_update_ptr(dst, dst->len + len, &src);
+  _ensure_capacity_update_ptr(dst, dst->end + len, &src);
 
-  char *insert = dst->buff+dst_pos;
+  char *insert = dst->b+dst_pos;
 
-  // dst_pos could be at the end (== dst->len)
-  if(dst_pos < dst->len)
+  // dst_pos could be at the end (== dst->end)
+  if(dst_pos < dst->end)
   {
     // Shift some characters up
-    memmove(insert + len, insert, (dst->len - dst_pos) * sizeof(char));
+    memmove(insert + len, insert, (dst->end - dst_pos) * sizeof(char));
 
-    if(src >= dst->buff && src < dst->buff + dst->capacity)
+    if(src >= dst->b && src < dst->b + dst->size)
     {
       // src/dst strings point to the same string in memory
       if(src < insert) memmove(insert, src, len * sizeof(char));
@@ -389,8 +253,8 @@ void strbuf_insert(StrBuf* dst, size_t dst_pos, const char* src, size_t len)
   else memmove(insert, src, len * sizeof(char));
 
   // Update size
-  dst->len += len;
-  dst->buff[dst->len] = '\0';
+  dst->end += len;
+  dst->b[dst->end] = '\0';
 }
 
 // Overwrite dst_pos..(dst_pos+dst_len-1) with src_len chars from src
@@ -409,29 +273,29 @@ void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
 
   if(src == NULL) return;
   if(dst_len == src_len) strbuf_copy(dst, dst_pos, src, src_len);
-  size_t newlen = dst->len + src_len - dst_len;
+  size_t newlen = dst->end + src_len - dst_len;
 
   _ensure_capacity_update_ptr(dst, newlen, &src);
 
-  if(src >= dst->buff && src < dst->buff + dst->capacity)
+  if(src >= dst->b && src < dst->b + dst->size)
   {
     if(src_len < dst_len) {
       // copy
-      memmove(dst->buff+dst_pos, src, src_len * sizeof(char));
+      memmove(dst->b+dst_pos, src, src_len * sizeof(char));
       // resize (shrink)
-      memmove(dst->buff+dst_pos+src_len, dst->buff+dst_pos+dst_len,
-              (dst->len-dst_pos-dst_len) * sizeof(char));
+      memmove(dst->b+dst_pos+src_len, dst->b+dst_pos+dst_len,
+              (dst->end-dst_pos-dst_len) * sizeof(char));
     }
     else
     {
       // Buffer is going to grow and src points to this buffer
 
       // resize (grow)
-      memmove(dst->buff+dst_pos+src_len, dst->buff+dst_pos+dst_len,
-              (dst->len-dst_pos-dst_len) * sizeof(char));
+      memmove(dst->b+dst_pos+src_len, dst->b+dst_pos+dst_len,
+              (dst->end-dst_pos-dst_len) * sizeof(char));
 
-      char *tgt = dst->buff + dst_pos;
-      char *end = dst->buff + dst_pos + src_len;
+      char *tgt = dst->b + dst_pos;
+      char *end = dst->b + dst_pos + src_len;
 
       if(src < tgt + dst_len)
       {
@@ -453,35 +317,35 @@ void strbuf_overwrite(StrBuf *dst, size_t dst_pos, size_t dst_len,
   else
   {
     // resize
-    memmove(dst->buff+dst_pos+src_len, dst->buff+dst_pos+dst_len,
-            (dst->len-dst_pos-dst_len) * sizeof(char));
+    memmove(dst->b+dst_pos+src_len, dst->b+dst_pos+dst_len,
+            (dst->end-dst_pos-dst_len) * sizeof(char));
     // copy
-    memcpy(dst->buff+dst_pos, src, src_len * sizeof(char));
+    memcpy(dst->b+dst_pos, src, src_len * sizeof(char));
   }
 
-  dst->len = newlen;
-  dst->buff[dst->len] = '\0';
+  dst->end = newlen;
+  dst->b[dst->end] = '\0';
 }
 
 void strbuf_delete(StrBuf *sbuf, size_t pos, size_t len)
 {
   _bounds_check_read_range(sbuf, pos, len);
-  memmove(sbuf->buff+pos, sbuf->buff+pos+len, sbuf->len-pos-len);
-  sbuf->len -= len;
-  sbuf->buff[sbuf->len] = '\0';
+  memmove(sbuf->b+pos, sbuf->b+pos+len, sbuf->end-pos-len);
+  sbuf->end -= len;
+  sbuf->b[sbuf->end] = '\0';
 }
 
 /**************************/
 /*         sprintf        */
 /**************************/
 
-int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
+int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char *fmt, va_list argptr)
 {
   _bounds_check_insert(sbuf, pos);
 
   // Length of remaining buffer
-  size_t buf_len = sbuf->capacity - pos;
-  if(buf_len == 0 && !strbuf_resize(sbuf, sbuf->capacity << 1)) {
+  size_t buf_len = sbuf->size - pos;
+  if(buf_len == 0 && !strbuf_resize(sbuf, sbuf->size << 1)) {
     fprintf(stderr, "%s:%i:Error: Out of memory\n", __FILE__, __LINE__);
     exit_on_error();
   }
@@ -490,7 +354,7 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
   va_list argptr_cpy;
   va_copy(argptr_cpy, argptr);
 
-  int num_chars = vsnprintf(sbuf->buff+pos, buf_len, fmt, argptr);
+  int num_chars = vsnprintf(sbuf->b+pos, buf_len, fmt, argptr);
   va_end(argptr);
 
   // num_chars is the number of chars that would be written (not including '\0')
@@ -506,7 +370,7 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
 
     // now use the argptr copy we made earlier
     // Don't need to use vsnprintf now, vsprintf will do since we know it'll fit
-    num_chars = vsprintf(sbuf->buff+pos, fmt, argptr_cpy);
+    num_chars = vsprintf(sbuf->b+pos, fmt, argptr_cpy);
     va_end(argptr_cpy);
     if(num_chars < 0) {
       fprintf(stderr, "Warning: strbuf_sprintf something went wrong..\n");
@@ -517,23 +381,23 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char* fmt, va_list argptr)
   // Don't need to NUL terminate, vsprintf/vnsprintf does that for us
 
   // Update length
-  sbuf->len = pos + (size_t)num_chars;
+  sbuf->end = pos + (size_t)num_chars;
 
   return num_chars;
 }
 
 // Appends sprintf
-int strbuf_sprintf(StrBuf *sbuf, const char* fmt, ...)
+int strbuf_sprintf(StrBuf *sbuf, const char *fmt, ...)
 {
   va_list argptr;
   va_start(argptr, fmt);
-  int num_chars = strbuf_vsprintf(sbuf, sbuf->len, fmt, argptr);
+  int num_chars = strbuf_vsprintf(sbuf, sbuf->end, fmt, argptr);
   va_end(argptr);
 
   return num_chars;
 }
 
-int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char* fmt, ...)
+int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char *fmt, ...)
 {
   _bounds_check_insert(sbuf, pos);
 
@@ -547,12 +411,12 @@ int strbuf_sprintf_at(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 
 // Does not prematurely end the string if you sprintf within the string
 // (vs at the end)
-int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
+int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char *fmt, ...)
 {
   _bounds_check_insert(sbuf, pos);
 
   char last_char;
-  size_t len = sbuf->len;
+  size_t len = sbuf->end;
 
   // Call vsnprintf with NULL, 0 to get resulting string length without writing
   va_list argptr;
@@ -566,7 +430,7 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
   }
 
   // Save overwritten char
-  last_char = (pos+(size_t)nchars < sbuf->len) ? sbuf->buff[pos+(size_t)nchars] : 0;
+  last_char = (pos+(size_t)nchars < sbuf->end) ? sbuf->b[pos+(size_t)nchars] : 0;
 
   va_start(argptr, fmt);
   nchars = strbuf_vsprintf(sbuf, pos, fmt, argptr);
@@ -578,11 +442,11 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
   }
 
   // Restore length if shrunk, null terminate if extended
-  if(sbuf->len < len) sbuf->len = len;
-  else sbuf->buff[sbuf->len] = '\0';
+  if(sbuf->end < len) sbuf->end = len;
+  else sbuf->b[sbuf->end] = '\0';
 
   // Re-instate overwritten character
-  sbuf->buff[pos+(size_t)nchars] = last_char;
+  sbuf->b[pos+(size_t)nchars] = last_char;
 
   return nchars;
 }
@@ -595,23 +459,23 @@ int strbuf_sprintf_noterm(StrBuf *sbuf, size_t pos, const char* fmt, ...)
 // Reading a FILE
 size_t strbuf_readline(StrBuf *sbuf, FILE *file)
 {
-  return freadline(file, &(sbuf->buff), &(sbuf->len), &(sbuf->capacity));
+  return freadline(file, &(sbuf->b), &(sbuf->end), &(sbuf->size));
 }
 
 size_t strbuf_gzreadline(StrBuf *sbuf, gzFile file)
 {
-  return gzreadline(file, &sbuf->buff, &sbuf->len, &sbuf->capacity);
+  return gzreadline(file, &sbuf->b, &sbuf->end, &sbuf->size);
 }
 
 // Reading a FILE
-size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, buffer_t *in)
+size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, CharBuffer *in)
 {
-  return (size_t)freadline_buf(file, in, &sbuf->buff, &sbuf->len, &sbuf->capacity);
+  return (size_t)freadline_buf(file, in, &sbuf->b, &sbuf->end, &sbuf->size);
 }
 
-size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile file, buffer_t *in)
+size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile file, CharBuffer *in)
 {
-  return (size_t)gzreadline_buf(file, in, &sbuf->buff, &sbuf->len, &sbuf->capacity);
+  return (size_t)gzreadline_buf(file, in, &sbuf->b, &sbuf->end, &sbuf->size);
 }
 
 size_t strbuf_skipline(FILE* file)
@@ -624,12 +488,12 @@ size_t strbuf_gzskipline(gzFile file)
   return gzskipline(file);
 }
 
-size_t strbuf_skipline_buf(FILE* file, buffer_t *in)
+size_t strbuf_skipline_buf(FILE* file, CharBuffer *in)
 {
   return (size_t)fskipline_buf(file, in);
 }
 
-size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in)
+size_t strbuf_gzskipline_buf(gzFile file, CharBuffer *in)
 {
   return (size_t)gzskipline_buf(file, in);
 }
@@ -637,14 +501,14 @@ size_t strbuf_gzskipline_buf(gzFile file, buffer_t *in)
 #define _func_read_nonempty(name,type_t,__readline)                            \
   size_t name(StrBuf *line, type_t fh)                                         \
   {                                                                            \
-    size_t i, origlen = line->len;                                             \
+    size_t i, origlen = line->end;                                             \
     while(__readline(line, fh) > 0) {                                          \
       i = origlen;                                                             \
-      while(i < line->len && (line->buff[i] == '\r' || line->buff[i] == '\n')) \
+      while(i < line->end && (line->b[i] == '\r' || line->b[i] == '\n'))       \
         i++;                                                                   \
-      if(i < line->len) return line->len - origlen;                            \
-      line->len = origlen;                                                     \
-      line->buff[line->len] = '\0';                                            \
+      if(i < line->end) return line->end - origlen;                            \
+      line->end = origlen;                                                     \
+      line->b[line->end] = '\0';                                               \
     }                                                                          \
     return 0;                                                                  \
   }
@@ -657,10 +521,10 @@ _func_read_nonempty(strbuf_gzreadline_nonempty,gzFile,strbuf_gzreadline)
   size_t name(StrBuf *sbuf, type_t file, size_t len)                           \
   {                                                                            \
     if(len == 0) return 0;                                                     \
-    strbuf_ensure_capacity(sbuf, sbuf->len + len);                             \
+    strbuf_ensure_capacity(sbuf, sbuf->end + len);                             \
     long nread;                                                                \
-    if((nread = (long)__read(file,sbuf->buff+sbuf->len,len)) <= 0) return 0;   \
-    sbuf->len += (size_t)nread;                                                \
+    if((nread = (long)__read(file,sbuf->b+sbuf->end,len)) <= 0) return 0;      \
+    sbuf->end += (size_t)nread;                                                \
     return (size_t)nread;                                                      \
   }
 
@@ -692,59 +556,59 @@ size_t strbuf_reset_gzreadline(StrBuf *sbuf, gzFile file)
 // Trim whitespace characters from the start and end of a string
 void strbuf_trim(StrBuf *sbuf)
 {
-  if(sbuf->len == 0)
+  if(sbuf->end == 0)
     return;
 
   // Trim end first
-  while(sbuf->len > 0 && isspace(sbuf->buff[sbuf->len-1]))
-    sbuf->len--;
+  while(sbuf->end > 0 && isspace(sbuf->b[sbuf->end-1]))
+    sbuf->end--;
 
-  sbuf->buff[sbuf->len] = '\0';
+  sbuf->b[sbuf->end] = '\0';
 
-  if(sbuf->len == 0)
+  if(sbuf->end == 0)
     return;
 
   size_t start = 0;
 
-  while(start < sbuf->len && isspace(sbuf->buff[start]))
+  while(start < sbuf->end && isspace(sbuf->b[start]))
     start++;
 
   if(start != 0)
   {
-    sbuf->len -= start;
-    memmove(sbuf->buff, sbuf->buff+start, sbuf->len * sizeof(char));
-    sbuf->buff[sbuf->len] = '\0';
+    sbuf->end -= start;
+    memmove(sbuf->b, sbuf->b+start, sbuf->end * sizeof(char));
+    sbuf->b[sbuf->end] = '\0';
   }
 }
 
 // Trim the characters listed in `list` from the left of `sbuf`
 // `list` is a null-terminated string of characters
-void strbuf_ltrim(StrBuf *sbuf, const char* list)
+void strbuf_ltrim(StrBuf *sbuf, const char *list)
 {
   size_t start = 0;
 
-  while(start < sbuf->len && (strchr(list, sbuf->buff[start]) != NULL))
+  while(start < sbuf->end && (strchr(list, sbuf->b[start]) != NULL))
     start++;
 
   if(start != 0)
   {
-    sbuf->len -= start;
-    memmove(sbuf->buff, sbuf->buff+start, sbuf->len * sizeof(char));
-    sbuf->buff[sbuf->len] = '\0';
+    sbuf->end -= start;
+    memmove(sbuf->b, sbuf->b+start, sbuf->end * sizeof(char));
+    sbuf->b[sbuf->end] = '\0';
   }
 }
 
 // Trim the characters listed in `list` from the right of `sbuf`
 // `list` is a null-terminated string of characters
-void strbuf_rtrim(StrBuf *sbuf, const char* list)
+void strbuf_rtrim(StrBuf *sbuf, const char *list)
 {
-  if(sbuf->len == 0)
+  if(sbuf->end == 0)
     return;
 
-  while(sbuf->len > 0 && strchr(list, sbuf->buff[sbuf->len-1]) != NULL)
-    sbuf->len--;
+  while(sbuf->end > 0 && strchr(list, sbuf->b[sbuf->end-1]) != NULL)
+    sbuf->end--;
 
-  sbuf->buff[sbuf->len] = '\0';
+  sbuf->b[sbuf->end] = '\0';
 }
 
 /**************************/
@@ -811,14 +675,14 @@ void string_reverse_region(char *str, size_t length)
   }
 }
 
-char string_is_all_whitespace(const char* s)
+char string_is_all_whitespace(const char *s)
 {
   int i;
   for(i = 0; s[i] != '\0' && isspace(s[i]); i++);
   return (s[i] == '\0');
 }
 
-char* string_next_nonwhitespace(char* s)
+char* string_next_nonwhitespace(char *s)
 {
   while(*s != '\0' && isspace(*s)) s++;
   return (*s == '\0' ? NULL : s);
@@ -827,7 +691,7 @@ char* string_next_nonwhitespace(char* s)
 // Strip whitespace the the start and end of a string.  
 // Strips whitepace from the end of the string with \0, and returns pointer to
 // first non-whitespace character
-char* string_trim(char* str)
+char* string_trim(char *str)
 {
   // Work backwards
   char *end = str+strlen(str);
@@ -841,7 +705,7 @@ char* string_trim(char* str)
 }
 
 // Removes \r and \n from the ends of a string and returns the new length
-size_t string_chomp(char* str, size_t len)
+size_t string_chomp(char *str, size_t len)
 {
   while(len > 0 && (str[len-1] == '\r' || str[len-1] == '\n')) len--;
   str[len] = '\0';
@@ -849,7 +713,7 @@ size_t string_chomp(char* str, size_t len)
 }
 
 // Returns count
-size_t string_count_char(const char* str, char c)
+size_t string_count_char(const char *str, char c)
 {
   size_t count = 0;
 
@@ -863,13 +727,13 @@ size_t string_count_char(const char* str, char c)
 }
 
 // Returns the number of strings resulting from the split
-size_t string_split(const char* split, const char* txt, char*** result)
+size_t string_split(const char *split, const char *txt, char ***result)
 {
   size_t split_len = strlen(split);
   size_t txt_len = strlen(txt);
 
   // result is temporarily held here
-  char** arr;
+  char **arr;
 
   if(split_len == 0)
   {
@@ -897,7 +761,7 @@ size_t string_split(const char* split, const char* txt, char*** result)
     }
   }
   
-  const char* find = txt;
+  const char *find = txt;
   size_t count = 1; // must have at least one item
 
   for(; (find = strstr(find, split)) != NULL; count++, find += split_len) {}
@@ -906,7 +770,7 @@ size_t string_split(const char* split, const char* txt, char*** result)
   arr = malloc(count * sizeof(char*));
   
   count = 0;
-  const char* last_position = txt;
+  const char *last_position = txt;
 
   size_t str_len;
 
