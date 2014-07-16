@@ -596,6 +596,8 @@ void _test_append(StrBuf* sbuf, char c, const char *str, const char *str2,
   size_t extend = append->end;
   size_t end = len + extend;
 
+  ASSERT(strlen(str2) >= n);
+
   strbuf_append_buff(sbuf, append);
   strbuf_append_char(sbuf, c);
   strbuf_append_str(sbuf, str);

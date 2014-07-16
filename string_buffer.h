@@ -51,6 +51,9 @@ StrBuf* strbuf_clone(const StrBuf *sb);
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
 #define strbuf_ensure_capacity(sb,size) buffer_ensure_capacity(sb,size)
 
+// Same as above, but update pointer if it pointed to resized array
+void strbuf_ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **ptr);
+
 // Resize the buffer to have capacity to hold a string of length new_len
 // (+ a null terminating character).  Can also be used to downsize the buffer's
 // memory usage.  Returns 1 on success, 0 on failure.
@@ -72,7 +75,7 @@ char strbuf_resize(StrBuf *sb, size_t new_len);
   StrBuf     *_sb  = (__sb);              \
   const char *_str = (__str);             \
   size_t _s = strlen(_str);               \
-  buffer_ensure_capacity(_sb,_s);         \
+  strbuf_ensure_capacity(_sb,_s);         \
   memcpy(_sb->b, _str, _s);               \
   _sb->b[_sb->end = _s] = '\0';           \
 } while(0)
@@ -82,8 +85,8 @@ char strbuf_resize(StrBuf *sb, size_t new_len);
 {                                            \
   StrBuf       *_dst = (__dst);              \
   const StrBuf *_src = (__src);              \
-  buffer_ensure_capacity(_dst, _src->end);   \
-  memcpy(_dst->b, _src->b, _src->end);       \
+  strbuf_ensure_capacity(_dst, _src->end);   \
+  memmove(_dst->b, _src->b, _src->end);      \
   _dst->b[_dst->end = _src->end] = '\0';     \
 } while(0)
 
@@ -92,20 +95,21 @@ char strbuf_resize(StrBuf *sb, size_t new_len);
 {                                           \
   StrBuf *_sb = (__sb);                     \
   char    _c  = (__c);                      \
-  buffer_ensure_capacity(_sb, _sb->end+1);  \
+  strbuf_ensure_capacity(_sb, _sb->end+1);  \
   _sb->b[_sb->end] = _c;                    \
   _sb->b[++_sb->end] = '\0';                \
 } while(0)
 
 // Copy N characters from a character array to the end of this StrBuf
-#define strbuf_append_strn(__sb,__str,__n) do \
-{                                             \
-  StrBuf     *_sb  = (__sb);                  \
-  const char *_str = (__str);                 \
-  size_t      _n   = (__n);                   \
-  buffer_ensure_capacity(_sb, _sb->end+_n);   \
-  memcpy(_sb->b+_sb->end, _str, _n);          \
-  _sb->b[_sb->end = _sb->end+_n] = '\0';      \
+// strlen(__str) must be >= __n
+#define strbuf_append_strn(__sb,__str,__n) do                   \
+{                                                               \
+  StrBuf     *_sb  = (__sb);                                    \
+  const char *_str = (__str);                                   \
+  size_t      _n   = (__n);                                     \
+  strbuf_ensure_capacity_update_ptr(_sb, _sb->end+_n, &_str);   \
+  memcpy(_sb->b+_sb->end, _str, _n);                            \
+  _sb->b[_sb->end = _sb->end+_n] = '\0';                        \
 } while(0)
 
 // Copy a character array to the end of this StrBuf
@@ -122,7 +126,7 @@ char strbuf_resize(StrBuf *sb, size_t new_len);
 
 #define strbuf_shrink(__sb,__len) do {                    \
   StrBuf *_sb = (__sb); _sb->b[_sb->end = (__len)] = 0;   \
-} while(0);
+} while(0)
 
 #define strbuf_dup_str(sb) strdup((sb)->b)
 
