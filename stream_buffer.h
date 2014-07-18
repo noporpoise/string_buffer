@@ -55,33 +55,30 @@ static inline CharBuffer* buffer_new(size_t s)
   else { free(b); return NULL; } /* couldn't malloc */
 }
 
-#define buffer_free(__buf) do {  \
-  CharBuffer *_buf = (__buf);    \
-  free(_buf->b);                 \
-  free(_buf);                    \
-} while(0)
+static inline void buffer_free(CharBuffer *cbuf)
+{
+  free(cbuf->b);
+  free(cbuf);
+}
 
 // Resize a void pointer
-#define vbuffer_ensure_capacity(__vbuf,__sizeptr,__len) do \
-{                                                          \
-  void   **_vbuf    = (void**)(__vbuf);                    \
-  size_t   _vlen    = (__len)+1; /* +1 for \0 */           \
-  size_t  *_sizeptr = (__sizeptr);                         \
-  if(*_sizeptr < _vlen) {                                  \
-    *_sizeptr = ROUNDUP2POW(_vlen);                        \
-    if((*_vbuf = realloc(*_vbuf, *_sizeptr)) == NULL) {    \
-      fprintf(stderr, "Out of memory\n");                  \
-      exit(EXIT_FAILURE);                                  \
-    }                                                      \
-  }                                                        \
-} while(0)
+static inline void vbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t len)
+{
+  if(*sizeptr < len) {
+    *sizeptr = ROUNDUP2POW(len);
+    if((*vbuf = realloc(*vbuf, *sizeptr)) == NULL) {
+      fprintf(stderr, "Out of memory\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+}
 
 // size_t s is the number of bytes you want to be able to store
 // the actual buffer is created with s+1 bytes to allow for the \0
-#define buffer_ensure_capacity(__cbuf,__s) do {             \
-  CharBuffer *_cbuf2 = (__cbuf);                            \
-  vbuffer_ensure_capacity(&_cbuf2->b, &_cbuf2->size, __s);  \
-} while(0)
+static inline void buffer_ensure_capacity(CharBuffer *cbuf, size_t s)
+{
+  vbuffer_ensure_capacity(&cbuf->b, &cbuf->size, s);
+}
 
 static inline void buffer_append_str(CharBuffer *buf, const char *str)
 {
