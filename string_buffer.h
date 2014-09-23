@@ -124,6 +124,13 @@ char strbuf_resize(StrBuf *sb, size_t new_len);
   strbuf_append_strn(__sb1, _sb2->b, _sb2->end); \
 } while(0)
 
+// Append a given string in lower or uppercase
+void strbuf_append_strn_lc(StrBuf *buf, const char *str, size_t len);
+void strbuf_append_strn_uc(StrBuf *buf, const char *str, size_t len);
+
+// Append char `c` `n` times
+void strbuf_append_charn(StrBuf *buf, char c, size_t n);
+
 #define strbuf_shrink(__sb,__len) do {                    \
   StrBuf *_sb = (__sb); _sb->b[_sb->end = (__len)] = 0;   \
 } while(0)

@@ -159,6 +159,38 @@ void strbuf_ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **p
 /* String functions */
 /********************/
 
+
+// Append string converted to lowercase
+void strbuf_append_strn_lc(StrBuf *buf, const char *str, size_t len)
+{
+  strbuf_ensure_capacity(buf, buf->end + len);
+  char *to = buf->b + buf->end;
+  const char *end = str + len;
+  for(; str < end; str++, to++) *to = tolower(*str);
+  buf->end += len;
+  buf->b[buf->end] = '\0';
+}
+
+// Append string converted to uppercase
+void strbuf_append_strn_uc(StrBuf *buf, const char *str, size_t len)
+{
+  strbuf_ensure_capacity(buf, buf->end + len);
+  char *to = buf->b + buf->end;
+  const char *end = str + len;
+  for(; str < end; str++, to++) *to = toupper(*str);
+  buf->end += len;
+  buf->b[buf->end] = '\0';
+}
+
+// Append char `c` `n` times
+void strbuf_append_charn(StrBuf *buf, char c, size_t n)
+{
+  strbuf_ensure_capacity(buf, buf->end + n);
+  memset(buf->b+buf->end, c, n);
+  buf->end += n;
+  buf->b[buf->end] = '\0';
+}
+
 // Remove \r and \n characters from the end of this StrBuf
 // Returns the number of characters removed
 size_t strbuf_chomp(StrBuf *sbuf)
