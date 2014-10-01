@@ -62,9 +62,10 @@ static inline void buffer_free(CharBuffer *cbuf)
 }
 
 // Resize a void pointer
-// BEWARE: we do not add an extra byte for nul terminators
+// Adds one to len for NULL terminating byte
 static inline void cbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t len)
 {
+  len++; // for nul byte
   if(*sizeptr < len) {
     *sizeptr = ROUNDUP2POW(len);
     if((*vbuf = realloc(*vbuf, *sizeptr)) == NULL) {
@@ -74,17 +75,17 @@ static inline void cbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t 
   }
 }
 
-// size_t s is the number of bytes you want to be able to store
-// BEWARE: we do not add an extra byte for nul terminators
-static inline void buffer_ensure_capacity(CharBuffer *cbuf, size_t s)
+// len is the number of bytes you want to be able to store
+// Adds one to len for NULL terminating byte
+static inline void buffer_ensure_capacity(CharBuffer *cbuf, size_t len)
 {
-  cbuffer_ensure_capacity(&cbuf->b, &cbuf->size, s);
+  cbuffer_ensure_capacity(&cbuf->b, &cbuf->size, len);
 }
 
 static inline void buffer_append_str(CharBuffer *buf, const char *str)
 {
   size_t len = strlen(str);
-  buffer_ensure_capacity(buf, buf->end+len+1);
+  buffer_ensure_capacity(buf, buf->end+len);
   memcpy(buf->b+buf->end, str, len);
   buf->end += len;
   buf->b[buf->end] = 0;
@@ -92,7 +93,7 @@ static inline void buffer_append_str(CharBuffer *buf, const char *str)
 
 static inline void buffer_append_char(CharBuffer *buf, char c)
 {
-  buffer_ensure_capacity(buf, buf->end+1+1);
+  buffer_ensure_capacity(buf, buf->end+1);
   buf->b[buf->end++] = c;
   buf->b[buf->end] = '\0';
 }
@@ -261,7 +262,7 @@ _func_read_buf(fread_buf,FILE*,fread2)
     {                                                                          \
       for(offset = in->begin; offset < in->end && in->b[offset++] != '\n'; ){} \
       buffered = offset - in->begin;                                           \
-      cbuffer_ensure_capacity(buf, size, (*len)+buffered+1); /*+1 for nul*/    \
+      cbuffer_ensure_capacity(buf, size, (*len)+buffered);                     \
       memcpy((*buf)+(*len), in->b+in->begin, buffered);                        \
       *len += buffered;                                                        \
       in->begin = offset;                                                      \
