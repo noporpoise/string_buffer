@@ -49,7 +49,7 @@ StrBuf* strbuf_clone(const StrBuf *sb);
 //
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
-#define strbuf_ensure_capacity(sb,size) buffer_ensure_capacity(sb,size)
+#define strbuf_ensure_capacity(sb,len) buffer_ensure_capacity(sb,(len)+1)
 
 // Same as above, but update pointer if it pointed to resized array
 void strbuf_ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **ptr);

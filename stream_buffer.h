@@ -62,7 +62,8 @@ static inline void buffer_free(CharBuffer *cbuf)
 }
 
 // Resize a void pointer
-static inline void vbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t len)
+// BEWARE: we do not add an extra byte for nul terminators
+static inline void cbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t len)
 {
   if(*sizeptr < len) {
     *sizeptr = ROUNDUP2POW(len);
@@ -74,16 +75,16 @@ static inline void vbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t 
 }
 
 // size_t s is the number of bytes you want to be able to store
-// the actual buffer is created with s+1 bytes to allow for the \0
+// BEWARE: we do not add an extra byte for nul terminators
 static inline void buffer_ensure_capacity(CharBuffer *cbuf, size_t s)
 {
-  vbuffer_ensure_capacity(&cbuf->b, &cbuf->size, s);
+  cbuffer_ensure_capacity(&cbuf->b, &cbuf->size, s);
 }
 
 static inline void buffer_append_str(CharBuffer *buf, const char *str)
 {
   size_t len = strlen(str);
-  buffer_ensure_capacity(buf, buf->end+len);
+  buffer_ensure_capacity(buf, buf->end+len+1);
   memcpy(buf->b+buf->end, str, len);
   buf->end += len;
   buf->b[buf->end] = 0;
@@ -91,7 +92,7 @@ static inline void buffer_append_str(CharBuffer *buf, const char *str)
 
 static inline void buffer_append_char(CharBuffer *buf, char c)
 {
-  buffer_ensure_capacity(buf, buf->end+1);
+  buffer_ensure_capacity(buf, buf->end+1+1);
   buf->b[buf->end++] = c;
   buf->b[buf->end] = '\0';
 }
@@ -258,10 +259,10 @@ _func_read_buf(fread_buf,FILE*,fread2)
     size_t offset, buffered, total_read = 0;                                   \
     while(in->end > in->begin)                                                 \
     {                                                                          \
-      for(offset = in->begin; offset < in->end && in->b[offset++] != '\n'; );  \
+      for(offset = in->begin; offset < in->end && in->b[offset++] != '\n'; ){} \
       buffered = offset - in->begin;                                           \
-      vbuffer_ensure_capacity(buf, size, *len+buffered);                       \
-      memcpy(*buf+*len, in->b+in->begin, buffered);                            \
+      cbuffer_ensure_capacity(buf, size, (*len)+buffered+1); /*+1 for nul*/    \
+      memcpy((*buf)+(*len), in->b+in->begin, buffered);                        \
       *len += buffered;                                                        \
       in->begin = offset;                                                      \
       total_read += buffered;                                                  \
