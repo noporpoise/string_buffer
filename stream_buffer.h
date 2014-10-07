@@ -100,14 +100,15 @@ static inline void buffer_append_char(CharBuffer *buf, char c)
 
 #define buffer_terminate(buf) ((buf)->b[(buf)->end] = 0)
 
-// Beware: buffer_chomp only removes 1 end-of-line at a time
-#define buffer_chomp(buf) do {                                                 \
-  if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\n') {                       \
-    (buf)->end--;                                                              \
-    if((buf)->end > 0 && (buf)->b[(buf)->end-1] == '\r') (buf)->end--;         \
-    (buf)->b[(buf)->end] = 0;                                                  \
-  }                                                                            \
-} while(0)
+static inline void buffer_chomp(CharBuffer *buf)
+{
+  while(buf->end > buf->begin &&
+        (buf->b[buf->end-1] == '\n' || buf->b[buf->end-1] == '\r'))
+  {
+    buf->end--;
+  }
+  buf->b[buf->end] = 0;
+}
 
 /* 
 Unbuffered
