@@ -104,6 +104,8 @@ static inline void buffer_append_char(CharBuffer *buf, char c)
   (buf)->begin = (buf)->end = 1; (buf)->b[1] = 0; \
 } while(0)
 
+#define buffer_len(buf) ((buf)->end - (buf)->begin)
+
 static inline void buffer_chomp(CharBuffer *buf)
 {
   while(buf->end > buf->begin &&
