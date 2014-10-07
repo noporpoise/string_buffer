@@ -100,6 +100,10 @@ static inline void buffer_append_char(CharBuffer *buf, char c)
 
 #define buffer_terminate(buf) ((buf)->b[(buf)->end] = 0)
 
+#define buffer_reset(buf) do { \
+  (buf)->begin = (buf)->end = 1; (buf)->b[1] = 0; \
+} while(0)
+
 static inline void buffer_chomp(CharBuffer *buf)
 {
   while(buf->end > buf->begin &&
