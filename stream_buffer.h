@@ -148,7 +148,7 @@ freadline(f,out)
 #define _func_readline(name,type_t,__gets) \
   static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
   {                                                                            \
-    if(*len+1 >= *size) *buf = realloc(*buf, *size *= 2);                      \
+    if(*len+1 >= *size) cbuffer_ensure_capacity(buf, size, *len+1);            \
     /* Don't read more than 2^32 bytes at once (gzgets limit) */               \
     size_t r = *size-*len > UINT_MAX ? UINT_MAX : *size-*len, origlen = *len;  \
     while(__gets(file, *buf+*len, r) != NULL)                                  \
