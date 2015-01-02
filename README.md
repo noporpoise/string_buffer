@@ -1,7 +1,6 @@
 C String Buffer
 ===============
 Library code for handling strings and reading from files  
-project: string_buffer  
 url: https://github.com/noporpoise/StringBuffer  
 author: Isaac Turner <turner.isaac@gmail.com>  
 license: Public Domain  
@@ -397,6 +396,18 @@ Other string functions
 
 These work on `char*` not `StrBuf`, but they're here because they're useful. 
 
+Safely copy a string.
+`n` is the maximum number of bytes to copy including the NULL byte.
+Copies at most n bytes from `src` to `dst`.
+Always appends a NULL terminating byte, unless n is zero.
+Returns a pointer to `dst`.
+
+    char* string_safe_ncpy(char *dst, const char *src, size_t n)
+
+Other functions:
+
+    size_t string_split_str(char *str, char sep, char **ptrs, size_t nptrs)
+    size_t string_char_replace(char *str, char from, char to)
     void string_reverse_region(char *str, size_t length)
     char string_is_all_whitespace(const char* s)
     char* string_next_nonwhitespace(char* s)
