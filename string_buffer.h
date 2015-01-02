@@ -4,7 +4,7 @@
  url: https://github.com/noporpoise/StringBuffer
  author: Isaac Turner <turner.isaac@gmail.com>
  license: Public Domain
- Jan 2014
+ Jan 2015
 */
 
 #ifndef STRING_BUFFER_FILE_SEEN
@@ -16,7 +16,14 @@
 
 #include "stream_buffer.h"
 
-typedef CharBuffer StrBuf;
+
+typedef struct
+{
+  char *b;
+  size_t end; // end is index of \0
+  size_t size; // size should be >= end+1 to allow for \0
+} StrBuf;
+
 
 //
 // Creation, reset, free and memory expansion
@@ -24,7 +31,7 @@ typedef CharBuffer StrBuf;
 
 // Constructors / Destructors
 StrBuf* strbuf_new(size_t len);
-#define strbuf_free(sb) buffer_free(sb)
+static inline void strbuf_free(StrBuf *sb) { free(sb->b); free(sb); }
 
 // Place a string buffer into existing memory. Example:
 //   StrBuf buf;
@@ -32,24 +39,23 @@ StrBuf* strbuf_new(size_t len);
 //   ...
 //   strbuf_dealloc(&buf);
 StrBuf* strbuf_alloc(StrBuf *sb, size_t len);
-#define strbuf_dealloc(sb) buffer_dealloc(sb)
+static inline void strbuf_dealloc(StrBuf *sb) { free(sb->b); memset(sb, 0, sizeof(*sb)); }
 
 // Copy a string or existing string buffer
 StrBuf* strbuf_create(const char *str);
 StrBuf* strbuf_clone(const StrBuf *sb);
 
 // Clear the content of an existing StrBuf (sets size to 0)
-#define strbuf_reset(__sb) do {  \
-  StrBuf *_sb = (__sb);          \
-  _sb->b[_sb->end = 0] = 0;      \
-} while(0)
+static inline void strbuf_reset(StrBuf *sb) { sb->b[sb->end = 0] = '\0'; }
 
 //
 // Resizing
 //
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
-#define strbuf_ensure_capacity(sb,len) buffer_ensure_capacity(sb,len)
+static inline void strbuf_ensure_capacity(StrBuf *sb, size_t len) {
+  cbuffer_ensure_capacity(&sb->b, &sb->size, len);
+}
 
 // Same as above, but update pointer if it pointed to resized array
 void strbuf_ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **ptr);
@@ -124,6 +130,11 @@ char strbuf_resize(StrBuf *sb, size_t new_len);
   strbuf_append_strn(__sb1, _sb2->b, _sb2->end); \
 } while(0)
 
+// Convert integers to string to append
+void strbuf_append_int(StrBuf *buf, int value);
+void strbuf_append_long(StrBuf *buf, long value);
+void strbuf_append_ulong(StrBuf *buf, unsigned long value);
+
 // Append a given string in lower or uppercase
 void strbuf_append_strn_lc(StrBuf *buf, const char *str, size_t len);
 void strbuf_append_strn_uc(StrBuf *buf, const char *str, size_t len);
@@ -183,10 +194,11 @@ void strbuf_delete(StrBuf *sb, size_t pos, size_t len);
 // sprintf
 //
 
-// sprintf to a StrBuf (adds string terminator after sprint)
+// sprintf to the end of a StrBuf (adds string terminator after sprint)
 int strbuf_sprintf(StrBuf *sb, const char *fmt, ...)
   __attribute__ ((format(printf, 2, 3)));
 
+// Print at a given position (overwrite chars at positions >= pos)
 int strbuf_sprintf_at(StrBuf *sb, size_t pos, const char *fmt, ...)
   __attribute__ ((format(printf, 3, 4)));
 
@@ -267,4 +279,4 @@ size_t string_chomp(char *str, size_t len);
 size_t string_count_char(const char *str, char c);
 size_t string_split(const char *split, const char *txt, char ***result);
 
-#endif
+#endif /* STRING_BUFFER_FILE_SEEN */

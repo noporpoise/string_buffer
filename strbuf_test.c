@@ -4,7 +4,7 @@
  url: https://github.com/noporpoise/StringBuffer
  author: Isaac Turner <turner.isaac@gmail.com>
  license: Public Domain
- Jan 2014
+ Jan 2015
 */
 
 // request decent POSIX version
@@ -634,6 +634,42 @@ void test_append()
   SUITE_END();
 }
 
+void _test_append_long(StrBuf *sbuf, long x)
+{
+  char truth[50];
+  sprintf(truth, "%li", x);
+  strbuf_reset(sbuf);
+  // Initialise the string with some noise
+  strbuf_append_charn(sbuf, 'x', rand()&0xffff); // 65536
+  size_t start = sbuf->end;
+  strbuf_append_long(sbuf, x);
+  ASSERT(strcmp(sbuf->b+start, truth) == 0);
+}
+
+void test_append_int()
+{
+  SUITE_START("using append_int()");
+  long repeat, x;
+
+  for(repeat = 0; repeat < 20; repeat++)
+  {
+    StrBuf *sbuf = strbuf_create("");
+
+    for(x = -300; x <= 2000; x++) {
+      _test_append_long(sbuf, x);
+    }
+
+    _test_append_long(sbuf, 123456789);
+    _test_append_long(sbuf, 9999999);
+
+    _test_append_long(sbuf, LONG_MIN);
+    _test_append_long(sbuf, LONG_MAX);
+
+    strbuf_free(sbuf);
+  }
+
+  SUITE_END();
+}
 
 void _test_chomp(const char *str)
 {
@@ -1531,6 +1567,7 @@ int main()
   test_set();
   test_as_str();
   test_append();
+  test_append_int();
   test_chomp();
   test_trim();
   test_reverse();

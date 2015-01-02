@@ -71,19 +71,20 @@ void _call_bounds_check_read_range(const StrBuf *sbuf, size_t start, size_t len,
 /*  Constructors/Destructors  */
 /******************************/
 
-StrBuf* strbuf_new(size_t size)
+StrBuf* strbuf_new(size_t len)
 {
-  StrBuf *sbuf = buffer_new(size+1);
+  StrBuf *sbuf = calloc(1, sizeof(StrBuf));
   if(!sbuf) return NULL;
-  sbuf->b[sbuf->begin = sbuf->end = 0] = 0;
+  if(!strbuf_alloc(sbuf, len)) { free(sbuf); return NULL; }
   return sbuf;
 }
 
-StrBuf* strbuf_alloc(StrBuf *sbuf, size_t size)
+StrBuf* strbuf_alloc(StrBuf *sbuf, size_t len)
 {
-  buffer_alloc(sbuf, size+1);
+  sbuf->size = ROUNDUP2POW(len+1);
+  sbuf->b = malloc(sbuf->size);
   if(!sbuf->b) return NULL;
-  sbuf->b[sbuf->begin = sbuf->end = 0] = 0;
+  sbuf->b[0] = '\0';
   return sbuf;
 }
 
@@ -155,10 +156,143 @@ void strbuf_ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **p
   }
 }
 
-/********************/
-/* String functions */
-/********************/
+/*******************/
+/* Append Integers */
+/*******************/
 
+/*
+ * Integer to string functions adapted from:
+ *   https://www.facebook.com/notes/facebook-engineering/three-optimization-tips-for-c/10151361643253920
+ */
+
+#define P01 10
+#define P02 100
+#define P03 1000
+#define P04 10000
+#define P05 100000
+#define P06 1000000
+#define P07 10000000
+#define P08 100000000
+#define P09 1000000000
+#define P10 10000000000
+#define P11 100000000000
+#define P12 1000000000000
+
+/**
+ * Return number of digits required to represent `num` in base 10.
+ * Uses binary search to find number.
+ * Examples:
+ *   num_of_digits(0)   = 1
+ *   num_of_digits(1)   = 1
+ *   num_of_digits(10)  = 2
+ *   num_of_digits(123) = 3
+ */
+static inline size_t num_of_digits(unsigned long v)
+{
+  if(v < P01) return 1;
+  if(v < P02) return 2;
+  if(v < P03) return 3;
+  if(v < P12) {
+    if(v < P08) {
+      if(v < P06) {
+        if(v < P04) return 4;
+        return 5 + (v >= P05);
+      }
+      return 7 + (v >= P07);
+    }
+    if(v < P10) {
+      return 9 + (v >= P09);
+    }
+    return 11 + (v >= P11);
+  }
+  return 12 + num_of_digits(v / P12);
+}
+
+void strbuf_append_ulong(StrBuf *buf, unsigned long value)
+{
+  // Append two digits at a time
+  static const char digits[201] =
+    "0001020304050607080910111213141516171819"
+    "2021222324252627282930313233343536373839"
+    "4041424344454647484950515253545556575859"
+    "6061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+
+  size_t num_digits = num_of_digits(value);
+  size_t pos = num_digits - 1;
+
+  strbuf_ensure_capacity(buf, buf->end+num_digits);
+  char *dst = buf->b + buf->end;
+
+  while(value >= 100)
+  {
+    size_t v = value % 100;
+    value /= 100;
+    dst[pos] = digits[v * 2 + 1];
+    dst[pos - 1] = digits[v * 2];
+    pos -= 2;
+  }
+
+  // Handle last 1-2 digits
+  if(value < 10) {
+    dst[pos] = '0' + value;
+  } else {
+    dst[pos] = digits[value * 2 + 1];
+    dst[pos - 1] = digits[value * 2];
+  }
+
+  buf->end += num_digits;
+  buf->b[buf->end] = '\0';
+}
+
+void strbuf_append_int(StrBuf *buf, int value)
+{
+  // strbuf_sprintf(buf, "%i", value);
+  strbuf_append_long(buf, value);
+}
+
+void strbuf_append_long(StrBuf *buf, long value)
+{
+  // strbuf_sprintf(buf, "%li", value);
+  if(value < 0) { strbuf_append_char(buf, '-'); value = -value; }
+  strbuf_append_ulong(buf, value);
+}
+
+
+/*
+size_t strbuf_num_of_digits(unsigned long num)
+{
+  size_t digits = 1;
+  while(1) {
+    if(num < 10) return digits;
+    if(num < 100) return digits+1;
+    if(num < 1000) return digits+2;
+    if(num < 10000) return digits+3;
+    num /= 10000;
+    digits += 4;
+  }
+  return digits;
+}
+
+void strbuf_append_ulong(StrBuf *buf, unsigned long value)
+{
+  // strbuf_sprintf(buf, "%lu", value);
+
+  size_t i, num_digits = strbuf_num_of_digits(value);
+  strbuf_ensure_capacity(buf, buf->end + num_digits);
+  buf->end += num_digits;
+  buf->b[buf->end] = '\0';
+
+  for(i = 1; i <= num_digits; i++) {
+    buf->b[buf->end - i] = '0' + (value % 10);
+    value /= 10;
+  }
+}
+*/
+
+/********************/
+/* Append functions */
+/********************/
 
 // Append string converted to lowercase
 void strbuf_append_strn_lc(StrBuf *buf, const char *str, size_t len)

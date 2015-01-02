@@ -5,7 +5,7 @@ project: string_buffer
 url: https://github.com/noporpoise/StringBuffer  
 author: Isaac Turner <turner.isaac@gmail.com>  
 license: Public Domain  
-Jan 2014
+Jan 2015
 
 [![Build Status](https://travis-ci.org/noporpoise/string_buffer.png?branch=master)](https://travis-ci.org/noporpoise/string_buffer)
 
@@ -55,7 +55,7 @@ Example Code
       // e.g. chomp (remove newline)
       strbuf_chomp(myBuff)
 
-      printf("%s\n", myBuff->buff)
+      printf("%s\n", myBuff->b)
 
       // Reset StrBuf so you're not just concatenating all the lines in memory
       strbuf_reset(myBuff)
@@ -72,12 +72,12 @@ the char* in the StrBuf struct. e.g.:
 
 Get the position of the first 'a' in a StrBuf
 
-    char* ptr = strchr(strbuf->buff, 'a')
-    int pos = (ptr == NULL ? -1 : ptr - strbuf->buff)
+    char *ptr = strchr(strbuf->b, 'a')
+    int pos = (ptr == NULL ? -1 : ptr - strbuf->b)
 
 Test if the StrBuf contains 'hello' from index 12
 
-    if(strncasecmp(strbuf->buff+12, "hello", 5) == 0)
+    if(strncasecmp(strbuf->b+12, "hello", 5) == 0)
       puts("world!\n")
 
 
@@ -89,9 +89,9 @@ Struct
 
     typedef struct
     {
-      char *buff;
-      size_t len; // length of the string
-      size_t capacity; // buffer size - includes '\0' (size is always >= len+1)
+      char *b;
+      size_t end; // length of the string
+      size_t size; // buffer size - includes '\0' (size is always >= len+1)
     } StrBuf;
 
 Creators, destructors etc.
@@ -112,7 +112,7 @@ Place a string buffer into existing memory
     strbuf_alloc(&buf, 100);
 
     // free malloc'd memory
-    free(buf->seq.buff);
+    free(buf->seq.b);
 
 Destructors
 
@@ -174,6 +174,12 @@ Copy a character array to the end of this StrBuf
 Copy N characters from a character array to the end of this StrBuf
 
     void strbuf_append_strn(StrBuf* sbuf, const char* txt, const size_t len)
+
+Convert integers to strings and append the the end
+
+    void strbuf_append_int(StrBuf *buf, int value)
+    void strbuf_append_long(StrBuf *buf, long value)
+    void strbuf_append_ulong(StrBuf *buf, unsigned long value)
 
 Remove \r and \n characters from the end of this StrBuf.
 Returns the number of characters removed
@@ -287,7 +293,7 @@ Example of buffered reading:
     while(strbuf_gzreadline_buf(line, gzf, in) > 0)
     {
       strbuf_chomp(line);
-      printf("read: %s\n", line->buff);
+      printf("read: %s\n", line->b);
     }
 
     strbuf_free(line);
@@ -329,10 +335,10 @@ correctly.
     char *input = "I'm sorry Dave I can't do that";
     
     strbuf_ensure_capacity(sbuf, strlen(input));
-    sscanf(input, "I'm sorry %s I can't do that", sbuf->buff);
-    sbuf->len = strlen(sbuf->buff);
+    sscanf(input, "I'm sorry %s I can't do that", sbuf->b);
+    sbuf->end = strlen(sbuf->b);
 
-    printf("Name: '%s'\n", sbuf->buff);
+    printf("Name: '%s'\n", sbuf->b);
 
     strbuf_free(sbuf);
 
@@ -403,7 +409,20 @@ These work on `char*` not `StrBuf`, but they're here because they're useful.
 License
 =======
 
-Public Domain. You may use this code as you like. No warranty. There may be bugs.
+This software is in the *Public Domain*. That means you can do whatever you like
+with it. That includes being used in proprietary products without attribution or
+restrictions. There are no warranties and there may be bugs. 
+
+Formally we are using CC0 - a Creative Commons license to place this work in the
+public domain. A copy of CC0 is in the LICENSE file. 
+
+    "CC0 is a public domain dedication from Creative Commons. A work released
+    under CC0 is dedicated to the public domain to the fullest extent permitted
+    by law. If that is not possible for any reason, CC0 also provides a lax,
+    permissive license as a fallback. Both public domain works and the lax
+    license provided by CC0 are compatible with the GNU GPL."
+      - http://www.gnu.org/licenses/license-list.html#CC0
+
 
 Development
 ===========

@@ -4,7 +4,7 @@
  url: https://github.com/noporpoise/StringBuffer
  author: Isaac Turner <turner.isaac@gmail.com>
  license: Public Domain
- Jan 2014
+ Jan 2015
 */
 
 #ifndef _STREAM_BUFFER_HEADER
@@ -22,7 +22,7 @@ typedef struct
   // begin is index of first char (unless begin >= end)
   // end is index of \0
   // size should be >= end+1 to allow for \0
-  // (end-size) is the number of bytes in buffer
+  // (end-begin) is the number of bytes in buffer
   size_t begin, end, size;
 } CharBuffer;
 
