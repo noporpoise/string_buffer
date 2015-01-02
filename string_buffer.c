@@ -81,8 +81,9 @@ StrBuf* strbuf_new(size_t len)
 
 StrBuf* strbuf_alloc(StrBuf *sbuf, size_t len)
 {
+  sbuf->end  = 0;
   sbuf->size = ROUNDUP2POW(len+1);
-  sbuf->b = malloc(sbuf->size);
+  sbuf->b    = malloc(sbuf->size);
   if(!sbuf->b) return NULL;
   sbuf->b[0] = '\0';
   return sbuf;
@@ -121,7 +122,7 @@ char strbuf_resize(StrBuf *sbuf, size_t new_len)
   char *new_buff = realloc(sbuf->b, capacity * sizeof(char));
   if(new_buff == NULL) return 0;
 
-  sbuf->b = new_buff;
+  sbuf->b    = new_buff;
   sbuf->size = capacity;
 
   if(sbuf->end > new_len)
@@ -139,7 +140,7 @@ void strbuf_ensure_capacity_update_ptr(StrBuf *sbuf, size_t size, const char **p
   if(sbuf->size <= size+1)
   {
     size_t oldcap = sbuf->size;
-    char *oldbuf = sbuf->b;
+    char *oldbuf  = sbuf->b;
 
     if(!strbuf_resize(sbuf, size))
     {
