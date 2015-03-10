@@ -219,16 +219,16 @@ int strbuf_sprintf_noterm(StrBuf *sb, size_t pos, const char *fmt, ...)
 size_t strbuf_reset_readline(StrBuf *sb, FILE *file);
 size_t strbuf_readline(StrBuf *sb, FILE *file);
 size_t strbuf_skipline(FILE *file);
-size_t strbuf_readline_buf(StrBuf *sb, FILE *file, CharBuffer *in);
-size_t strbuf_skipline_buf(FILE* file, CharBuffer *in);
+size_t strbuf_readline_buf(StrBuf *sb, FILE *file, StreamBuffer *in);
+size_t strbuf_skipline_buf(FILE* file, StreamBuffer *in);
 size_t strbuf_read(StrBuf *sb, FILE *file, size_t len);
 
 // Reading a gzFile
 size_t strbuf_reset_gzreadline(StrBuf *sb, gzFile gz_file);
 size_t strbuf_gzreadline(StrBuf *sb, gzFile gz_file);
 size_t strbuf_gzskipline(gzFile gz_file);
-size_t strbuf_gzreadline_buf(StrBuf *sb, gzFile gz_file, CharBuffer *in);
-size_t strbuf_gzskipline_buf(gzFile file, CharBuffer *in);
+size_t strbuf_gzreadline_buf(StrBuf *sb, gzFile gz_file, StreamBuffer *in);
+size_t strbuf_gzskipline_buf(gzFile file, StreamBuffer *in);
 size_t strbuf_gzread(StrBuf *sb, gzFile gz_file, size_t len);
 
 // Read a line that has at least one character that is not \r or \n

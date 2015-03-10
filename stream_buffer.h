@@ -24,7 +24,7 @@ typedef struct
   // size should be >= end+1 to allow for \0
   // (end-begin) is the number of bytes in buffer
   size_t begin, end, size;
-} CharBuffer;
+} StreamBuffer;
 
 // Buffer functions
 #ifndef ROUNDUP2POW
@@ -32,7 +32,7 @@ typedef struct
 #endif
 
 // Returns NULL if out of memory, @b otherwise
-static inline CharBuffer* buffer_alloc(CharBuffer *b, size_t s)
+static inline StreamBuffer* strm_buf_alloc(StreamBuffer *b, size_t s)
 {
   b->size = s < 16 ? 16 : s;
   if((b->b = malloc(b->size)) == NULL) return NULL;
@@ -41,21 +41,21 @@ static inline CharBuffer* buffer_alloc(CharBuffer *b, size_t s)
   return b;
 }
 
-static inline void buffer_dealloc(CharBuffer *b)
+static inline void strm_buf_dealloc(StreamBuffer *b)
 {
   free(b->b);
-  memset(b, 0, sizeof(CharBuffer));
+  memset(b, 0, sizeof(StreamBuffer));
 }
 
-static inline CharBuffer* buffer_new(size_t s)
+static inline StreamBuffer* strm_buf_new(size_t s)
 {
-  CharBuffer *b = (CharBuffer*)malloc(sizeof(CharBuffer));
+  StreamBuffer *b = (StreamBuffer*)malloc(sizeof(StreamBuffer));
   if(b == NULL) return NULL;
-  else if(buffer_alloc(b,s)) return b;
+  else if(strm_buf_alloc(b,s)) return b;
   else { free(b); return NULL; } /* couldn't malloc */
 }
 
-static inline void buffer_free(CharBuffer *cbuf)
+static inline void strm_buf_free(StreamBuffer *cbuf)
 {
   free(cbuf->b);
   free(cbuf);
@@ -77,36 +77,36 @@ static inline void cbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t 
 
 // len is the number of bytes you want to be able to store
 // Adds one to len for NULL terminating byte
-static inline void buffer_ensure_capacity(CharBuffer *cbuf, size_t len)
+static inline void strm_buf_ensure_capacity(StreamBuffer *cbuf, size_t len)
 {
   cbuffer_ensure_capacity(&cbuf->b, &cbuf->size, len);
 }
 
-static inline void buffer_append_str(CharBuffer *buf, const char *str)
+static inline void strm_buf_append_str(StreamBuffer *buf, const char *str)
 {
   size_t len = strlen(str);
-  buffer_ensure_capacity(buf, buf->end+len);
+  strm_buf_ensure_capacity(buf, buf->end+len);
   memcpy(buf->b+buf->end, str, len);
   buf->end += len;
   buf->b[buf->end] = 0;
 }
 
-static inline void buffer_append_char(CharBuffer *buf, char c)
+static inline void strm_buf_append_char(StreamBuffer *buf, char c)
 {
-  buffer_ensure_capacity(buf, buf->end+1);
+  strm_buf_ensure_capacity(buf, buf->end+1);
   buf->b[buf->end++] = c;
   buf->b[buf->end] = '\0';
 }
 
-#define buffer_terminate(buf) ((buf)->b[(buf)->end] = 0)
+#define strm_buf_terminate(buf) ((buf)->b[(buf)->end] = 0)
 
-#define buffer_reset(buf) do { \
+#define strm_buf_reset(buf) do { \
   (buf)->begin = (buf)->end = 1; (buf)->b[1] = 0; \
 } while(0)
 
-#define buffer_len(buf) ((buf)->end - (buf)->begin)
+#define strm_buf_len(buf) ((buf)->end - (buf)->begin)
 
-static inline void buffer_chomp(CharBuffer *buf)
+static inline void strm_buf_chomp(StreamBuffer *buf)
 {
   while(buf->end > buf->begin &&
         (buf->b[buf->end-1] == '\n' || buf->b[buf->end-1] == '\r'))
@@ -208,7 +208,7 @@ freadline_buf(f,in,out)
 
 // Define getc for gzFile and FILE (buffered)
 #define _func_getc_buf(fname,type_t,__read)                                    \
-  static inline int fname(type_t file, CharBuffer *in)                         \
+  static inline int fname(type_t file, StreamBuffer *in)                       \
   {                                                                            \
     if(in->begin >= in->end) {                                                 \
       _READ_BUFFER(file,in,__read,-1);                                         \
@@ -222,7 +222,7 @@ _func_getc_buf(fgetc_buf,FILE*,fread2)
 
 // Define ungetc for buffers
 // returns c if successful, otherwise -1
-static inline int ungetc_buf(int c, CharBuffer *in)
+static inline int ungetc_buf(int c, StreamBuffer *in)
 {
   if(in->begin == 0) {
     if(in->end == 0) {
@@ -240,7 +240,7 @@ static inline int ungetc_buf(int c, CharBuffer *in)
 #define gzungetc_buf(c,in) ungetc_buf(c,in)
 
 #define _func_read_buf(fname,type_t,__read)                                    \
-  static inline int fname(type_t file, void *ptr, size_t len, CharBuffer *in)  \
+  static inline int fname(type_t file, void *ptr, size_t len, StreamBuffer *in)\
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
     size_t remaining = len, next;                                              \
@@ -260,7 +260,7 @@ _func_read_buf(fread_buf,FILE*,fread2)
 
 // Define readline for gzFile and FILE (buffered)
 #define _func_readline_buf(fname,type_t,__read)                                \
-  static inline int fname(type_t file, CharBuffer *in,                         \
+  static inline int fname(type_t file, StreamBuffer *in,                       \
                           char **buf, size_t *len, size_t *size)               \
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
@@ -286,7 +286,7 @@ _func_readline_buf(freadline_buf,FILE*,fread2)
 
 // Define buffered skipline
 #define _func_skipline_buf(fname,ftype,__read)                                 \
-  static inline int fname(ftype file, CharBuffer *in)                          \
+  static inline int fname(ftype file, StreamBuffer *in)                        \
   {                                                                            \
     if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
     size_t offset, skipped_bytes = 0;                                          \
@@ -309,7 +309,7 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 // Reads upto len-1 bytes (or to the first \n if first) into str
 // Adds null-terminating byte
 #define _func_gets_buf(fname,type_t,__read) \
-  static inline char* fname(type_t file, CharBuffer *in, char *str,            \
+  static inline char* fname(type_t file, StreamBuffer *in, char *str,          \
                             unsigned int len)                                  \
   {                                                                            \
     if(len == 0) return NULL;                                                  \
@@ -369,8 +369,8 @@ fprintf_buf(fh,buf,fmt,...)
 gzprintf_buf(gz,buf,fmt,...)
 fwrite_buf(fh,buf,ptr,len)
 gzwrite_buf(gz,buf,ptr,len)
-buffer_flush(fh,buf)
-buffer_gzflush(gz,buf)
+strm_buf_flush(fh,buf)
+strm_buf_gzflush(gz,buf)
 */
 
 

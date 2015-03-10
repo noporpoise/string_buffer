@@ -634,12 +634,12 @@ size_t strbuf_gzreadline(StrBuf *sbuf, gzFile file)
 }
 
 // Reading a FILE
-size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, CharBuffer *in)
+size_t strbuf_readline_buf(StrBuf *sbuf, FILE *file, StreamBuffer *in)
 {
   return (size_t)freadline_buf(file, in, &sbuf->b, &sbuf->end, &sbuf->size);
 }
 
-size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile file, CharBuffer *in)
+size_t strbuf_gzreadline_buf(StrBuf *sbuf, gzFile file, StreamBuffer *in)
 {
   return (size_t)gzreadline_buf(file, in, &sbuf->b, &sbuf->end, &sbuf->size);
 }
@@ -654,12 +654,12 @@ size_t strbuf_gzskipline(gzFile file)
   return gzskipline(file);
 }
 
-size_t strbuf_skipline_buf(FILE* file, CharBuffer *in)
+size_t strbuf_skipline_buf(FILE* file, StreamBuffer *in)
 {
   return (size_t)fskipline_buf(file, in);
 }
 
-size_t strbuf_gzskipline_buf(gzFile file, CharBuffer *in)
+size_t strbuf_gzskipline_buf(gzFile file, StreamBuffer *in)
 {
   return (size_t)gzskipline_buf(file, in);
 }

@@ -147,19 +147,19 @@ void test_buffers()
 {
   SUITE_START("buffers");
 
-  // Test buffer_init, buffer_append_str, buffer_append_char etc
+  // Test buffer_init, strm_buf_append_str, strm_buf_append_char etc
 
-  CharBuffer *buf = buffer_new(4);
+  StreamBuffer *buf = strm_buf_new(4);
 
   ASSERT(buf->begin == 1);
   ASSERT(buf->end == 1);
   ASSERT(buf->size >= 4);
 
-  buffer_append_char(buf, 'a');
-  buffer_append_char(buf, 'b');
-  buffer_append_char(buf, 'c');
-  buffer_append_char(buf, 'd');
-  buffer_append_char(buf, 'e');
+  strm_buf_append_char(buf, 'a');
+  strm_buf_append_char(buf, 'b');
+  strm_buf_append_char(buf, 'c');
+  strm_buf_append_char(buf, 'd');
+  strm_buf_append_char(buf, 'e');
 
   ASSERT(buf->begin == 1);
   ASSERT(buf->end == 6);
@@ -167,23 +167,23 @@ void test_buffers()
   ASSERT(strcmp(buf->b+1, "abcde") == 0);
 
   // Causes expansion -- tests ensure_capacity
-  buffer_append_str(buf, "fghijklmnopqrstuvwxyz");
+  strm_buf_append_str(buf, "fghijklmnopqrstuvwxyz");
 
   ASSERT(buf->begin == 1);
   ASSERT(buf->end == 27);
   ASSERT(buf->size >= 28); // 1 + strlen + '\0'
   ASSERT(strcmp(buf->b+1, "abcdefghijklmnopqrstuvwxyz") == 0);
 
-  buffer_append_char(buf, '\r');
-  buffer_append_char(buf, '\n');
-  buffer_chomp(buf);
+  strm_buf_append_char(buf, '\r');
+  strm_buf_append_char(buf, '\n');
+  strm_buf_chomp(buf);
 
   ASSERT(buf->begin == 1);
   ASSERT(buf->end == 27);
   ASSERT(buf->size >= 28); // 1 + strlen + '\0'
   ASSERT(strcmp(buf->b+1, "abcdefghijklmnopqrstuvwxyz") == 0);
 
-  buffer_free(buf);
+  strm_buf_free(buf);
 
   SUITE_END();
 }
@@ -228,8 +228,8 @@ void test_buffered_reading()
   gzfile1 = gzopen(tmp_gzfile1, "r");
   gzfile2 = gzopen(tmp_gzfile2, "r");
 
-  CharBuffer *fbuf = buffer_new(12);
-  CharBuffer *gzbuf = buffer_new(12);
+  StreamBuffer *fbuf = strm_buf_new(12);
+  StreamBuffer *gzbuf = strm_buf_new(12);
 
   ASSERT(fbuf != NULL);
   ASSERT(gzbuf != NULL);
@@ -407,8 +407,8 @@ void test_buffered_reading()
   strbuf_free(st2);
   strbuf_free(st3);
   strbuf_free(st4);
-  buffer_free(gzbuf);
-  buffer_free(fbuf);
+  strm_buf_free(gzbuf);
+  strm_buf_free(fbuf);
 
   SUITE_END();
 }
