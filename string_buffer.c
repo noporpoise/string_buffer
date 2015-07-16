@@ -530,7 +530,8 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char *fmt, va_list argptr)
     exit_on_error();
   }
 
-  if((size_t)num_chars+1 >= buf_len)
+  // num_chars does not include the null terminating byte
+  if((size_t)num_chars+1 > buf_len)
   {
     strbuf_ensure_capacity(sbuf, pos+(size_t)num_chars);
 
