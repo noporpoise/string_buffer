@@ -5,5 +5,7 @@ compiler:
   - clang
   - gcc
 
+sudo: false
+
 install: make all
 script: make test
