@@ -145,6 +145,7 @@ freadline(f,out)
 #define fungetc(c,f) ungetc(c,f)
 
 // Define readline for gzFile and FILE (unbuffered)
+// Check ferror/gzerror on return for error reading
 #define _func_readline(name,type_t,__gets) \
   static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
   {                                                                            \
