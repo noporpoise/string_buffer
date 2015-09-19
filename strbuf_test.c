@@ -382,9 +382,9 @@ void test_buffered_reading()
   // Read lines from file1 and compare to fread results on other files
   while(freadline(file1, &st1->b, &st1->end, &st1->size) > 0)
   {
-    ASSERT(fread_buf(file2, st2->b, st1->end, fbuf) == (int)st1->end);
+    ASSERT(fread_buf(file2, st2->b, st1->end, fbuf) == st1->end);
     ASSERT(gzread(gzfile1, st3->b, (unsigned int)st1->end) == (int)st1->end);
-    ASSERT(gzread_buf(gzfile2, st4->b, st1->end, gzbuf) == (int)st1->end);
+    ASSERT(gzread_buf(gzfile2, st4->b, st1->end, gzbuf) == st1->end);
 
     // Null terminate since fread doesn't do that
     st2->b[st1->end] = st3->b[st1->end] = st4->b[st1->end] = '\0';
