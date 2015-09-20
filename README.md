@@ -344,7 +344,7 @@ correctly.
 Buffered input
 --------------
 
-buffered_input.h also provides generic buffered input functions
+`buffered_input.h` also provides generic buffered input functions
 
     buffer_t* buffer_new(size_t s)
     char buffer_init(buffer_t *b, size_t s)
@@ -355,41 +355,86 @@ buffered_input.h also provides generic buffered input functions
     void buffer_terminate(buffer_t *b)
     void buffer_chomp(buffer_t *b)
 
-    // Standardized gzFile and FILE versions of stream functions
+Standardized gzFile and FILE versions of stream functions
 
-    // Return number of bytes read (0 -> EOF; gzread2 returns -1 on error)
-    int gzread2(gzFile gz, buffer_t *buf, unsigned int len)
-    size_t fread2(FILE *f, buffer_t *buf, size_t len)
+    // Returns non-zero if an error has occurred
+    int ferror2(FILE *fh);
+    int gzerror2(gzFile gz);
 
+    //
+    // Unbuffered reading
+    //
+
+    // Return number of bytes read
+    // Check ferror/gzerror on return for error
+    size_t fread2(FILE *fh, buffer_t *buf, size_t len)
+    size_t gzread2(gzFile gz, buffer_t *buf, size_t len)
+
+    // Read up to n bytes or up to a newline
     // Return pointer to buffer read into or NULL if EOF
-    char* gzgets2(gzFile gz, buffer_t *buf, int len)
-    char* fgets2(FILE *f, buffer_t *buf, int len)
+    // Check ferror/gzerror on return for error
+    char* fgets2(FILE *fh, buffer_t *buf, size_t len)
+    char* gzgets2(gzFile gz, buffer_t *buf, size_t len)
+
+    // Read a line
+    // Returns number of bytes read
+    // Check ferror/gzerror on return for error
+    size_t freadline(FILE* fh, char **buf, size_t *len, size_t *size)
+    size_t gzreadline(gzFile gz, char **buf, size_t *len, size_t *size)
+
+    // Skip a line
+    // Returns number of bytes skipped
+    // Check ferror/gzerror on return for error
+    size_t fskipline(FILE* fh)
+    size_t gzskipline(gzFile gz)
+
+    //
+    // Buffered reading
+    //
+
+    // Get a character
+    // Check ferror/gzerror on return for error
+    int fgetc_buf(FILE *fh, buffer_t *in)
+    int gzgetc_buf(gzFile gz, buffer_t *in)
+
+    // Read up to n bytes or up to a newline
+    // Return pointer to buffer read into or NULL if EOF
+    // Check ferror/gzerror on return for error
+    char* fgets_buf(FILE* fh, buffer_t *in, char* str, size_t len)
+    char* gzgets_buf(gzFile gz, buffer_t *in, char* str, size_t len)
+
+    // Read a line
+    // Returns number of bytes read
+    // Check ferror/gzerror on return for error
+    size_t freadline_buf(FILE* fh, buffer_t *in, char **buf, size_t *len, size_t *size)
+    size_t gzreadline_buf(gzFile gz, buffer_t *in, char **buf, size_t *len, size_t *size)
+
+    // Skip a line
+    // Returns number of bytes skipped
+    // Check ferror/gzerror on return for error
+    int fskipline_buf(FILE* fh, buffer_t *in)
+    int gzskipline_buf(gzFile gz, buffer_t *in)
+
+    //
+    // Unbuffered writing
+    //
+
+    // Write a single character to a stream
+    // Returns a non-negative number, or –1 in case of error.
+    int fputc2(FILE *fh, char c)
+    int gzputc2(gzFile gz, char c)
 
     // Writes the given null-terminated string to a stream, excluding the
-    // terminating null character.
-    // Returns a non-negative number, or –1 in case of error. 
-    int gzputs2(gzFile gz, buffer_t *buf)
-    int fputs2(FILE *f, buffer_t *buf)
+    // terminating null character
+    // Returns a non-negative number, or –1 in case of error.
+    int fputs2(FILE *fh, const char *str)
+    int gzputs2(gzFile gz, const char *str)
 
-    // FILE readline
-    size_t freadline(FILE* file, char **buf, size_t *len, size_t *size)
-    size_t fskipline(FILE* file)
+    // Write to a stream
+    // Check ferror/gzerror on return for error
+    size_t fwrite2(FILE *fh, void *ptr, size_t len);
+    int gzwrite2(gzFile gz, void *ptr, size_t len);
 
-    // FILE Buffered reading
-    int fgetc_buf(FILE* file, buffer_t *in)
-    char* fgets_buf(FILE* file, buffer_t *in, char* str, unsigned int len)
-    int freadline_buf(FILE* file, buffer_t *in, char **buf, size_t *len, size_t *size)
-    int fskipline_buf(FILE* file, buffer_t *in)
-
-    // gzFile readline
-    size_t gzreadline(gzFile file, char **buf, size_t *len, size_t *size)
-    size_t fskipline(FILE* file)
-
-    // gzFile Buffered reading
-    int gzgetc_buf(gzFile file, buffer_t *in)
-    char* gzgets_buf(gzFile file, buffer_t *in, char* str, unsigned int len)
-    int gzreadline_buf(gzFile file, buffer_t *in, char **buf, size_t *len, size_t *size)
-    int gzskipline_buf(gzFile file, buffer_t *in)
 
 Other string functions
 ----------------------

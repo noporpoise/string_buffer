@@ -131,13 +131,33 @@ gzreadline(gz,out)
 freadline(f,out)
 */
 
+#define ferror2(fh) ferror(fh)
+static inline int gzerror2(gzFile gz) { int e; gzerror(gz, &e); return (e < 0); }
 
 // Define read for gzFile and FILE (unbuffered)
-#define gzread2(gz,buf,len) gzread(gz,buf,(unsigned int)len)
-#define fread2(f,buf,len) fread(buf,1,len,f)
+// Check ferror/gzerror on return for error
+#define fread2(fh,buf,len) fread(buf,1,len,fh)
 
+// gzread returns -1 on error, otherwise number of bytes read
+// gzread can only read 2^32 bytes at a time, and returns -1 on error
+// Check ferror/gzerror on return for error
+static inline size_t gzread2(gzFile gz, void *ptr, size_t len)
+{
+  size_t nread = 0, n;
+  int s;
+  while(nread < len) {
+    n = len - nread;
+    if(n > UINT_MAX) n = UINT_MAX;
+    s = gzread(gz, (char*)ptr+nread, n);
+    if(s <= 0) break;
+    nread += s;
+  }
+  return nread;
+}
+
+// TODO: these should support len > 2^32 by looping fgets/gzgets
 #define gzgets2(gz,buf,len) gzgets(gz,buf,(int)(len))
-#define fgets2(f,buf,len) fgets(buf,(int)(len),f)
+#define fgets2(fh,buf,len) fgets(buf,(int)(len),fh)
 
 // fgetc(f), gzgetc(gz) are already good to go
 // fungetc(c,f), gzungetc(c,gz) are already good to go
@@ -145,7 +165,7 @@ freadline(f,out)
 #define fungetc(c,f) ungetc(c,f)
 
 // Define readline for gzFile and FILE (unbuffered)
-// Check ferror/gzerror on return for error reading
+// Check ferror/gzerror on return for error
 #define _func_readline(name,type_t,__gets) \
   static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
   {                                                                            \
@@ -194,33 +214,30 @@ freadline_buf(f,in,out)
 */
 
 // __read is either gzread2 or fread2
-// gzread2 returns -1 on error, otherwise number of bytes read
-// fread2 only returns number of bytes read
 // offset of 1 so we can unget at least one char
 // Beware: read-in buffer is not null-terminated
 // Returns fail on error
-// Can't have a buffer larger than 2^32 because that's all that gzFile can read
-#define _READ_BUFFER(file,in,__read,fail) do                                   \
+#define _READ_BUFFER(file,in,__read) do                                        \
 {                                                                              \
-  size_t buf_size = (in)->size > UINT_MAX ? UINT_MAX : (in)->size;             \
-  long _input = (long)__read(file,(in)->b+1,buf_size-1);                       \
-  if(_input < 0) return fail;                                                  \
-  (in)->end = 1+(size_t)_input; (in)->begin = 1;                               \
+  (in)->end = 1+__read(file,(in)->b+1,(in)->size-1);                           \
+  (in)->begin = 1;                                                             \
 } while(0)
 
 // Define getc for gzFile and FILE (buffered)
+// Returns character or -1 at EOF / error
+// Check ferror/gzerror on return for error
 #define _func_getc_buf(fname,type_t,__read)                                    \
   static inline int fname(type_t file, StreamBuffer *in)                       \
   {                                                                            \
     if(in->begin >= in->end) {                                                 \
-      _READ_BUFFER(file,in,__read,-1);                                         \
-      return in->end == in->begin ? -1 : in->b[in->begin++];                   \
+      _READ_BUFFER(file,in,__read);                                            \
+      return in->begin >= in->end ? -1 : in->b[in->begin++];                   \
     }                                                                          \
     return in->b[in->begin++];                                                 \
   }
 
-_func_getc_buf(gzgetc_buf,gzFile,gzread2)
 _func_getc_buf(fgetc_buf,FILE*,fread2)
+_func_getc_buf(gzgetc_buf,gzFile,gzread2)
 
 // Define ungetc for buffers
 // returns c if successful, otherwise -1
@@ -241,8 +258,8 @@ static inline int ungetc_buf(int c, StreamBuffer *in)
 #define fungetc_buf(c,in) ungetc_buf(c,in)
 #define gzungetc_buf(c,in) ungetc_buf(c,in)
 
-// Returns number of bytes read, check gzerror(gz) / ferror(fh) to test for
-// errors after calling
+// Returns number of bytes read
+// Check ferror/gzerror on return for error
 #define _func_read_buf(fname,type_t,__read)                                    \
   static inline size_t fname(type_t file, void *ptr, size_t len, StreamBuffer *in)\
   {                                                                            \
@@ -251,14 +268,13 @@ static inline int ungetc_buf(int c, StreamBuffer *in)
       next = in->end - in->begin;                                              \
       memcpy(ptr, in->b+in->begin, in->end-in->begin);                         \
       in->begin = in->end; ptr = (char*)ptr + next; remaining -= next;         \
-      if(__read(file,ptr,remaining) < 0) { return 0; }                         \
-      return len;                                                              \
+      remaining -= __read(file,ptr,remaining);                                 \
     }                                                                          \
     else {                                                                     \
       while(1) {                                                               \
         if(remaining == 0) { break; }                                          \
         if(in->begin >= in->end) {                                             \
-          _READ_BUFFER(file,in,__read,0);                                      \
+          _READ_BUFFER(file,in,__read);                                        \
           if(in->begin >= in->end) { break; }                                  \
         }                                                                      \
         next = in->end - in->begin;                                            \
@@ -266,19 +282,20 @@ static inline int ungetc_buf(int c, StreamBuffer *in)
         memcpy(ptr, in->b+in->begin, next);                                    \
         in->begin += next; ptr = (char*)ptr + next; remaining -= next;         \
       }                                                                        \
-      return len - remaining;                                                  \
     }                                                                          \
+    return len - remaining;                                                    \
   }
 
 _func_read_buf(gzread_buf,gzFile,gzread2)
 _func_read_buf(fread_buf,FILE*,fread2)
 
 // Define readline for gzFile and FILE (buffered)
+// Check ferror/gzerror on return for error
 #define _func_readline_buf(fname,type_t,__read)                                \
-  static inline int fname(type_t file, StreamBuffer *in,                       \
-                          char **buf, size_t *len, size_t *size)               \
+  static inline size_t fname(type_t file, StreamBuffer *in,                    \
+                             char **buf, size_t *len, size_t *size)            \
   {                                                                            \
-    if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
+    if(in->begin >= in->end) { _READ_BUFFER(file,in,__read); }                 \
     size_t offset, buffered, total_read = 0;                                   \
     while(in->end > in->begin)                                                 \
     {                                                                          \
@@ -290,20 +307,21 @@ _func_read_buf(fread_buf,FILE*,fread2)
       in->begin = offset;                                                      \
       total_read += buffered;                                                  \
       if((*buf)[*len-1] == '\n') break;                                        \
-      _READ_BUFFER(file,in,__read,-1);                                         \
+      _READ_BUFFER(file,in,__read);                                            \
     }                                                                          \
     (*buf)[*len] = 0;                                                          \
-    return (int)total_read;                                                    \
+    return total_read;                                                         \
   }
 
 _func_readline_buf(gzreadline_buf,gzFile,gzread2)
 _func_readline_buf(freadline_buf,FILE*,fread2)
 
 // Define buffered skipline
+// Check ferror/gzerror on return for error
 #define _func_skipline_buf(fname,ftype,__read)                                 \
-  static inline int fname(ftype file, StreamBuffer *in)                        \
+  static inline size_t fname(ftype file, StreamBuffer *in)                     \
   {                                                                            \
-    if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,-1); }              \
+    if(in->begin >= in->end) { _READ_BUFFER(file,in,__read); }                 \
     size_t offset, skipped_bytes = 0;                                          \
     while(in->end > in->begin)                                                 \
     {                                                                          \
@@ -311,9 +329,9 @@ _func_readline_buf(freadline_buf,FILE*,fread2)
       skipped_bytes += offset - in->begin;                                     \
       in->begin = offset;                                                      \
       if(in->b[offset-1] == '\n') break;                                       \
-      _READ_BUFFER(file,in,__read,-1);                                         \
+      _READ_BUFFER(file,in,__read);                                            \
     }                                                                          \
-    return (int)skipped_bytes;                                                 \
+    return skipped_bytes;                                                      \
   }
 
 _func_skipline_buf(gzskipline_buf,gzFile,gzread2)
@@ -323,13 +341,14 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
 
 // Reads upto len-1 bytes (or to the first \n if first) into str
 // Adds null-terminating byte
-#define _func_gets_buf(fname,type_t,__read) \
-  static inline char* fname(type_t file, StreamBuffer *in, char *str,          \
-                            unsigned int len)                                  \
+// returns pointer to `str` or NULL if EOF
+// Check ferror/gzerror on return for error
+#define _func_gets_buf(fname,type_t,__read)                                    \
+  static inline char* fname(type_t file, StreamBuffer *in, char *str, size_t len)\
   {                                                                            \
     if(len == 0) return NULL;                                                  \
     if(len == 1) {str[0] = 0; return str; }                                    \
-    if(in->begin >= in->end) { _READ_BUFFER(file,in,__read,NULL); }            \
+    if(in->begin >= in->end) { _READ_BUFFER(file,in,__read); }                 \
     size_t i, buffered, limit, total_read = 0, remaining = len-1;              \
     while(in->end > in->begin)                                                 \
     {                                                                          \
@@ -341,7 +360,7 @@ _func_skipline_buf(fskipline_buf,FILE*,fread2)
       total_read += buffered;                                                  \
       remaining -= buffered;                                                   \
       if(remaining == 0 || str[total_read-1] == '\n') break;                   \
-      _READ_BUFFER(file,in,__read,NULL);                                       \
+      _READ_BUFFER(file,in,__read);                                            \
     }                                                                          \
     str[total_read] = 0;                                                       \
     return total_read == 0 ? NULL : str;                                       \
@@ -394,8 +413,8 @@ gzwrite2(gz,ptr,len)
 #define fputc2(fh,c) fputc(c,fh)
 #define gzputc2(gz,c) gzputc(gz,c)
 
-#define fputs2(fh,c) fputs(c,fh)
-#define gzputs2(gz,c) gzputs(gz,c)
+#define fputs2(fh,str) fputs(str,fh)
+#define gzputs2(gz,str) gzputs(gz,str)
 
 #define fwrite2(fh,ptr,len) fwrite(ptr,len,1,fh)
 #define gzwrite2(gz,ptr,len) gzwrite(gz,ptr,len)
@@ -403,7 +422,7 @@ gzwrite2(gz,ptr,len)
 /*
  Output (buffered)
 
-// To do
+// TODO
 fputc_buf(fh,buf,c)
 gzputc_buf(gz,buf,c)
 fputs_buf(fh,buf,str)
