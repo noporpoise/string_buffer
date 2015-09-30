@@ -147,43 +147,38 @@ void test_buffers()
 {
   SUITE_START("buffers");
 
-  // Test buffer_init, strm_buf_append_str, strm_buf_append_char etc
+  // Test buffer_init, cbuf_append_str, cbuf_append_char etc
 
-  StreamBuffer *buf = strm_buf_new(4);
+  char *buf = malloc(4);
+  size_t len = 0, size = 4;
 
-  ASSERT(buf->begin == 1);
-  ASSERT(buf->end == 1);
-  ASSERT(buf->size >= 4);
+  cbuf_append_char(&buf, &len, &size, 'a');
+  cbuf_append_char(&buf, &len, &size, 'b');
+  cbuf_append_char(&buf, &len, &size, 'c');
+  cbuf_append_char(&buf, &len, &size, 'd');
+  cbuf_append_char(&buf, &len, &size, 'e');
 
-  strm_buf_append_char(buf, 'a');
-  strm_buf_append_char(buf, 'b');
-  strm_buf_append_char(buf, 'c');
-  strm_buf_append_char(buf, 'd');
-  strm_buf_append_char(buf, 'e');
-
-  ASSERT(buf->begin == 1);
-  ASSERT(buf->end == 6);
-  ASSERT(buf->size >= 7); // 1 + strlen + '\0'
-  ASSERT(strcmp(buf->b+1, "abcde") == 0);
+  ASSERT(len == 5);
+  ASSERT(size >= 6); // strlen + '\0'
+  ASSERT(strcmp(buf, "abcde") == 0);
 
   // Causes expansion -- tests ensure_capacity
-  strm_buf_append_str(buf, "fghijklmnopqrstuvwxyz");
+  const char addstr[] = "fghijklmnopqrstuvwxyz";
+  cbuf_append_str(&buf, &len, &size, addstr, strlen(addstr));
 
-  ASSERT(buf->begin == 1);
-  ASSERT(buf->end == 27);
-  ASSERT(buf->size >= 28); // 1 + strlen + '\0'
-  ASSERT(strcmp(buf->b+1, "abcdefghijklmnopqrstuvwxyz") == 0);
+  ASSERT(len == 26);
+  ASSERT(size >= 27); // strlen + '\0'
+  ASSERT(strcmp(buf, "abcdefghijklmnopqrstuvwxyz") == 0);
 
-  strm_buf_append_char(buf, '\r');
-  strm_buf_append_char(buf, '\n');
-  strm_buf_chomp(buf);
+  cbuf_append_char(&buf, &len, &size, '\r');
+  cbuf_append_char(&buf, &len, &size, '\n');
+  cbuf_chomp(buf, &len);
 
-  ASSERT(buf->begin == 1);
-  ASSERT(buf->end == 27);
-  ASSERT(buf->size >= 28); // 1 + strlen + '\0'
-  ASSERT(strcmp(buf->b+1, "abcdefghijklmnopqrstuvwxyz") == 0);
+  ASSERT(len == 26);
+  ASSERT(size >= 27); // strlen + '\0'
+  ASSERT(strcmp(buf, "abcdefghijklmnopqrstuvwxyz") == 0);
 
-  strm_buf_free(buf);
+  free(buf);
 
   SUITE_END();
 }

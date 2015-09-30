@@ -54,7 +54,7 @@ static inline void strbuf_reset(StrBuf *sb) { sb->b[sb->end = 0] = '\0'; }
 
 // Ensure capacity for len characters plus '\0' character - exits on FAILURE
 static inline void strbuf_ensure_capacity(StrBuf *sb, size_t len) {
-  cbuffer_ensure_capacity(&sb->b, &sb->size, len);
+  cbuf_capacity(&sb->b, &sb->size, len);
 }
 
 // Same as above, but update pointer if it pointed to resized array

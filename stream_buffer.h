@@ -1,10 +1,10 @@
 /*
- stream_buffer.c
+ stream_buffer.h
  project: string_buffer
  url: https://github.com/noporpoise/StringBuffer
  author: Isaac Turner <turner.isaac@gmail.com>
  license: Public Domain
- Jan 2015
+ Sep 2015
 */
 
 #ifndef _STREAM_BUFFER_HEADER
@@ -16,6 +16,54 @@
 #include <zlib.h>
 #include <limits.h>
 
+/*
+   Generic string buffer functions
+*/
+
+#ifndef ROUNDUP2POW
+  #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
+#endif
+
+static inline void cbuf_capacity(char **buf, size_t *sizeptr, size_t len)
+{
+  len++; // for nul byte
+  if(*sizeptr < len) {
+    *sizeptr = ROUNDUP2POW(len);
+    if((*buf = realloc(*buf, *sizeptr)) == NULL) {
+      fprintf(stderr, "Out of memory\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+}
+
+static inline void cbuf_append_char(char **buf, size_t *lenptr, size_t *sizeptr,
+                                    char c)
+{
+  cbuf_capacity(buf, sizeptr, *lenptr+1);
+  (*buf)[(*lenptr)++] = c;
+  (*buf)[*lenptr] = '\0';
+}
+
+static inline void cbuf_append_str(char **buf, size_t *lenptr, size_t *sizeptr,
+                                   const char *str, size_t len)
+{
+  cbuf_capacity(buf, sizeptr, *lenptr+len);
+  memcpy(*buf + *lenptr, str, len);
+  *lenptr += len;
+  (*buf)[*lenptr] = '\0';
+}
+
+static inline void cbuf_chomp(char *buf, size_t *lenptr)
+{
+  while(*lenptr && (buf[(*lenptr)-1] == '\n' || buf[(*lenptr)-1] == '\r'))
+    (*lenptr)--;
+  buf[*lenptr] = '\0';
+}
+
+/*
+   Stream buffer
+*/
+
 typedef struct
 {
   char *b;
@@ -26,10 +74,10 @@ typedef struct
   size_t begin, end, size;
 } StreamBuffer;
 
-// Buffer functions
-#ifndef ROUNDUP2POW
-  #define ROUNDUP2POW(x) (0x1UL << (64 - __builtin_clzl(x)))
-#endif
+
+#define strm_buf_init {.b = NULL, .begin = 0, .end = 0, .size = 0}
+
+#define strm_buf_reset(sb) do { (b)->begin = (b)->end = 1; } while(0)
 
 // Returns NULL if out of memory, @b otherwise
 static inline StreamBuffer* strm_buf_alloc(StreamBuffer *b, size_t s)
@@ -61,62 +109,15 @@ static inline void strm_buf_free(StreamBuffer *cbuf)
   free(cbuf);
 }
 
-// Resize a void pointer
-// Adds one to len for NULL terminating byte
-static inline void cbuffer_ensure_capacity(char **vbuf, size_t *sizeptr, size_t len)
-{
-  len++; // for nul byte
-  if(*sizeptr < len) {
-    *sizeptr = ROUNDUP2POW(len);
-    if((*vbuf = realloc(*vbuf, *sizeptr)) == NULL) {
-      fprintf(stderr, "Out of memory\n");
-      exit(EXIT_FAILURE);
-    }
-  }
-}
-
 // len is the number of bytes you want to be able to store
 // Adds one to len for NULL terminating byte
 static inline void strm_buf_ensure_capacity(StreamBuffer *cbuf, size_t len)
 {
-  cbuffer_ensure_capacity(&cbuf->b, &cbuf->size, len);
+  cbuf_capacity(&cbuf->b, &cbuf->size, len);
 }
 
-static inline void strm_buf_append_str(StreamBuffer *buf, const char *str)
-{
-  size_t len = strlen(str);
-  strm_buf_ensure_capacity(buf, buf->end+len);
-  memcpy(buf->b+buf->end, str, len);
-  buf->end += len;
-  buf->b[buf->end] = 0;
-}
 
-static inline void strm_buf_append_char(StreamBuffer *buf, char c)
-{
-  strm_buf_ensure_capacity(buf, buf->end+1);
-  buf->b[buf->end++] = c;
-  buf->b[buf->end] = '\0';
-}
-
-#define strm_buf_terminate(buf) ((buf)->b[(buf)->end] = 0)
-
-#define strm_buf_reset(buf) do { \
-  (buf)->begin = (buf)->end = 1; (buf)->b[1] = 0; \
-} while(0)
-
-#define strm_buf_len(buf) ((buf)->end - (buf)->begin)
-
-static inline void strm_buf_chomp(StreamBuffer *buf)
-{
-  while(buf->end > buf->begin &&
-        (buf->b[buf->end-1] == '\n' || buf->b[buf->end-1] == '\r'))
-  {
-    buf->end--;
-  }
-  buf->b[buf->end] = 0;
-}
-
-/* 
+/*
 Unbuffered
 
 fgetc(f)
@@ -169,7 +170,7 @@ static inline size_t gzread2(gzFile gz, void *ptr, size_t len)
 #define _func_readline(name,type_t,__gets) \
   static inline size_t name(type_t file, char **buf, size_t *len, size_t *size)\
   {                                                                            \
-    if(*len+1 >= *size) cbuffer_ensure_capacity(buf, size, *len+1);            \
+    if(*len+1 >= *size) cbuf_capacity(buf, size, *len+1);                      \
     /* Don't read more than 2^32 bytes at once (gzgets limit) */               \
     size_t r = *size-*len > UINT_MAX ? UINT_MAX : *size-*len, origlen = *len;  \
     while(__gets(file, *buf+*len, r) != NULL)                                  \
@@ -301,7 +302,7 @@ _func_read_buf(fread_buf,FILE*,fread2)
     {                                                                          \
       for(offset = in->begin; offset < in->end && in->b[offset++] != '\n'; ){} \
       buffered = offset - in->begin;                                           \
-      cbuffer_ensure_capacity(buf, size, (*len)+buffered);                     \
+      cbuf_capacity(buf, size, (*len)+buffered);                               \
       memcpy((*buf)+(*len), in->b+in->begin, buffered);                        \
       *len += buffered;                                                        \
       in->begin = offset;                                                      \
