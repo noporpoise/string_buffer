@@ -538,12 +538,12 @@ int strbuf_vsprintf(StrBuf *sbuf, size_t pos, const char *fmt, va_list argptr)
     // now use the argptr copy we made earlier
     // Don't need to use vsnprintf now, vsprintf will do since we know it'll fit
     num_chars = vsprintf(sbuf->b+pos, fmt, argptr_cpy);
-    va_end(argptr_cpy);
     if(num_chars < 0) {
       fprintf(stderr, "Warning: strbuf_sprintf something went wrong..\n");
       exit_on_error();
     }
   }
+  va_end(argptr_cpy);
 
   // Don't need to NUL terminate, vsprintf/vnsprintf does that for us
 
