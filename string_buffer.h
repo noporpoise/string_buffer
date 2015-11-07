@@ -39,14 +39,20 @@ static inline void strbuf_free(StrBuf *sb) { free(sb->b); free(sb); }
 //   ...
 //   strbuf_dealloc(&buf);
 StrBuf* strbuf_alloc(StrBuf *sb, size_t len);
-static inline void strbuf_dealloc(StrBuf *sb) { free(sb->b); memset(sb, 0, sizeof(*sb)); }
+
+static inline void strbuf_dealloc(StrBuf *sb) {
+  free(sb->b);
+  memset(sb, 0, sizeof(*sb));
+}
 
 // Copy a string or existing string buffer
 StrBuf* strbuf_create(const char *str);
 StrBuf* strbuf_clone(const StrBuf *sb);
 
 // Clear the content of an existing StrBuf (sets size to 0)
-static inline void strbuf_reset(StrBuf *sb) { sb->b[sb->end = 0] = '\0'; }
+static inline void strbuf_reset(StrBuf *sb) {
+  if(sb->b) { sb->b[sb->end = 0] = '\0'; }
+}
 
 //
 // Resizing
