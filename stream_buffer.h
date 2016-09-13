@@ -386,17 +386,39 @@ static inline off_t gztell_buf(gzFile gz, StreamBuffer *strm) {
 static inline long fseek_buf(FILE *fh, off_t offset, int whence,
                              StreamBuffer *strm)
 {
-  int x = fseek(fh, offset, whence);
-  if(x == 0) { strm->begin = strm->end = 1; }
-  return x;
+  // fh points to byte after end of buffer
+  // ftell(fh) returns <0 on error
+  off_t n = strm->end-strm->begin;
+  off_t t = ftell(fh), s = t - n;
+  if(t >= 0 && whence == SEEK_CUR && offset >= 0 && offset < n) {
+    strm->begin += offset;
+    return 0;
+  } else if(t >= 0 && whence == SEEK_SET && s <= offset && offset < t) {
+    strm->begin += offset-s;
+    return 0;
+  } else {
+    strm->begin = strm->end = 1; // wipe buffer
+    return fseek(fh, offset, whence);
+   }
 }
 
 static inline long gzseek_buf(gzFile gz, off_t offset, int whence,
                               StreamBuffer *strm)
 {
-  int x = gzseek(gz, offset, whence);
-  if(x == 0) { strm->begin = strm->end = 1; }
-  return x;
+  // gz points to byte after end of buffer
+  // gztell(gz) returns <0 on error
+  off_t n = strm->end-strm->begin;
+  off_t t = gztell(gz), s = t - n;
+  if(t >= 0 && whence == SEEK_CUR && offset >= 0 && offset < n) {
+    strm->begin += offset;
+    return 0;
+  } else if(t >= 0 && whence == SEEK_SET && s <= offset && offset < t) {
+    strm->begin += offset-s;
+    return 0;
+  } else {
+    strm->begin = strm->end = 1; // wipe buffer
+    return gzseek(gz, offset, whence);
+   }
 }
 
 /*
