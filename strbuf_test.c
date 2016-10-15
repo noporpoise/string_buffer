@@ -139,6 +139,23 @@ static void random_str(char *str, size_t len)
 
 /* Tests! */
 
+void test_roundup2pow()
+{
+  SUITE_START("roundup2pow");
+  ASSERT(ROUNDUP2POW(0) == 0);
+  ASSERT(ROUNDUP2POW(1) == 1);
+  ASSERT(ROUNDUP2POW(2) == 2);
+  ASSERT(ROUNDUP2POW(3) == 4);
+  ASSERT(ROUNDUP2POW(4) == 4);
+  ASSERT(ROUNDUP2POW(5) == 8);
+  ASSERT(ROUNDUP2POW(6) == 8);
+  ASSERT(ROUNDUP2POW(7) == 8);
+  ASSERT(ROUNDUP2POW(8) == 8);
+  ASSERT(ROUNDUP2POW(255) == 256);
+  ASSERT(ROUNDUP2POW(256) == 256);
+  SUITE_END();
+}
+
 /************************/
 /* Buffered input tests */
 /************************/
@@ -1551,6 +1568,8 @@ void test_split_old()
 
 int main()
 {
+  test_roundup2pow();
+
   test_buffers();
   test_buffered_reading();
 
